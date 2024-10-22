@@ -17,11 +17,19 @@ const routes = [
         component: RegisterPage,
     },
     {
-        path: '/home',
-        name: 'Home',
-        component: HomePage, // Rute untuk beranda
-    },
+            path: '/home',
+            component: HomePage,
+            beforeEnter: (to, from, next) => {
+                const isAuthenticated = localStorage.getItem('user');
+                const userRole = JSON.parse(localStorage.getItem('user')).role;
 
+                if (isAuthenticated && userRole === 'admin') {
+                    next();
+                } else {
+                    next({ path: '/unauthorized' });
+                }
+            }
+        },
 ];
 
 const router = createRouter({

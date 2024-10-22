@@ -1,183 +1,161 @@
 <template>
-  <div class="background">
-    <div class="regis-container">
-      <!-- Tambahkan elemen gambar untuk logo -->
-      <div class="form">
-        <img src="./Logo Kemdikbud.png" alt="Logo" class="logo" />
-        <h2>Register</h2>
-        <form @submit.prevent="handleRegister">
-          <div class="form-group">
-            <label for="password">Nama</label>
-            <input type="text" v-model="Nama" id="password" placeholder="Enter your name" required />
-          </div>
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" v-model="username" id="username" placeholder="Enter your username" required />
-          </div>
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" v-model="password" id="password" placeholder="Enter your password" required />
-          </div>
-          <button type="submit" :disabled="!isFormValid">Login</button>
-          <router-link to="/" class="login-link">Have an account? Login</router-link>
-          <router-link to="/forgot-password" class="forgot-password">Forgot Password?</router-link>
-        </form>
-        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-      </div>
+  <div class="container-outer">
+    <div class="register-container">
+      <h2>Buat akun baru</h2>
+      <form @submit.prevent="handleRegister">
+        <div class="mb-3">
+          <input type="text" v-model="username" class="form-control" placeholder="User Name" required />
+        </div>
+        <div class="mb-3">
+          <input type="text" v-model="nama" class="form-control" placeholder="Nama Lengkap" required />
+        </div>
+        <div class="mb-3">
+          <input type="email" v-model="email" class="form-control" placeholder="Alamat email" required />
+        </div>
+        <div class="mb-3">
+          <input type="password" v-model="password" class="form-control" placeholder="Kata sandi" required />
+        </div>
+        <div class="mb-3">
+          <input type="password" v-model="confirmPassword" class="form-control" placeholder="Konfirmasi Kata Sandi"
+            required />
+        </div>
+        <div class="mb-3">
+          <input type="text" v-model="nomor_hp" class="form-control" placeholder="Nomor HP" required />
+        </div>
+        <button type="submit" class="btn btn-success btn-block" :disabled="!isFormValid">
+          Daftar
+        </button>
+      </form>
+      <p v-if="errorMessage" class="text-danger mt-2">{{ errorMessage }}</p>
+      <p class="mt-3">Sudah punya akun? <router-link to="/">Login</router-link></p>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      username: '',
-      password: '',
-      errorMessage: ''
+      username: "",
+      nama: "",
+      email: "",
+      password: "",
+      nomor_hp: "",
+      confirmPassword: "",
+      errorMessage: "",
     };
   },
   computed: {
     isFormValid() {
-      return this.username.trim() !== '' && this.password.trim() !== '';
-    }
+      return (
+        this.username.trim() !== "" &&
+        this.nama.trim() !== "" &&
+        this.email.trim() !== "" &&
+        this.password.trim() !== "" &&
+        this.nomor_hp.trim() !== "" &&
+        this.password === this.confirmPassword
+      );
+    },
   },
   methods: {
-    handleLogin() {
-      // Simulasi proses login
-      if (this.username === 'admin' && this.password === 'password') {
-        alert('Login berhasil!');
-        // Lakukan navigasi atau pengalihan setelah login berhasil
-      } else {
-        this.errorMessage = 'Username atau password salah';
+    async handleRegister() {
+      try {
+        if (!this.isFormValid) {
+          this.errorMessage = "Pastikan semua kolom terisi dan kata sandi cocok.";
+          return;
+        }
+
+        // Log the registration data for debugging
+        console.log({
+          username: this.username,
+          nama: this.nama,
+          email: this.email,
+          password: this.password,
+          nomor_hp: this.nomor_hp,
+          role: this.role, // Log the selected role
+        });
+
+        const response = await axios.post('http://localhost:8000/api/register', {
+          username: this.username,
+          nama: this.nama,
+          email: this.email,
+          password: this.password,
+          nomor_hp: this.nomor_hp,
+          jabatan: this.role, // Use selected role in the request
+        });
+
+        alert("Registrasi berhasil!");
+
+        // Redirect to home page based on the user's role
+        let homeRoute = '';
+        switch (this.role) {
+          case 'super_admin':
+            homeRoute = '/home/super-admin';
+            break;
+          case 'system_admin':
+            homeRoute = '/home/system-admin';
+            break;
+          case 'ketua_kelas':
+            homeRoute = '/home/ketua-kelas';
+            break;
+          case 'pegawai':
+            homeRoute = '/home/pegawai';
+            break;
+        }
+
+        this.$router.push(homeRoute); // Redirect to the appropriate home route
+      } catch (error) {
+        if (error.response) {
+          console.error(error.response.data);
+          this.errorMessage = error.response.data.message || "Registrasi gagal. Coba lagi.";
+        } else {
+          console.error(error);
+          this.errorMessage = "Registrasi gagal. Coba lagi.";
+        }
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style scoped>
-.background {
-  background-image: url('/src/components/bg2.jpg');
-  background-size: cover;
-  background-position: center;
-  height: 100vh;
-  /* Membuat tinggi background full */
+/* Flexbox untuk memastikan container selalu di tengah */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.container-outer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
-}
-
-.regis-container {
-  width: 55%;
   height: 100vh;
-  /* Membuat kontainer setinggi layar */
-  padding: 30px;
-  background-color: rgba(255, 255, 255, 0,3);
-  backdrop-filter: blur(8px); /* Blur latar belakang */
-  backdrop-filter: blur(8px); /* Blur latar belakang */
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 8px 0 0 8px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
+  background-color: #f8f9fa;
 }
 
-.logo {
-  width: 250px;
-  /* Sesuaikan ukuran logo */
-  height: auto;
-  margin-bottom: 5px;
-  margin-top: 40px;
-  /* Beri jarak antara logo dan judul */
-}
-
-.form {
-  width: 80%;
+.register-container {
   background-color: #fff;
-  height: auto;
-  border: #000000 2px solid;
-  border-radius: 10px;
-  padding-top: -50px;
-  padding: 0% 5% 5% 5%;
-}
-
-h2 {
-  margin-top: 10%;
-  margin-bottom: 20px;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 20px;
-  position: relative;
-}
-
-label {
-  display: block;
-  font-size: 1rem;
-  margin-bottom: 3px;
-  text-align: left;
-  color: #555;
-}
-
-input[type="text"],
-input[type="password"] {
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
   width: 100%;
-  padding: 10px 5px;
-  font-size: 1rem;
-  border: none;
-  border-bottom: 2px solid #ccc;
-  background: none;
-  outline: none;
-  transition: border-color 0.3s;
+  text-align: center;
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus {
-  border-bottom: 2px solid #007BFF;
+.register-container h2 {
+  margin-bottom: 20px;
 }
 
-button {
+.btn-success {
   width: 100%;
-  padding: 10px;
-  font-size: 1rem;
-  color: #fff;
-  background-color: #007BFF;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
 }
 
-button:disabled {
-  background-color: #aaa;
-}
-
-button:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-.login-link,
-.forgot-password {
-  display: block;
-  margin-top: 10px;
-  color: #007BFF;
-  text-decoration: none;
-  font-size: 0.9rem;
-}
-
-.login-link:hover,
-.forgot-password:hover {
-  text-decoration: underline;
-}
-
-.error {
-  color: red;
-  margin-top: 10px;
+.text-danger {
+  color: #dc3545;
 }
 </style>
