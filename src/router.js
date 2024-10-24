@@ -1,35 +1,27 @@
 // src/router.js
 import { createRouter, createWebHistory } from 'vue-router';
-import LoginPage from './components/LoginPage.vue';
-import RegisterPage from './components/RegisterPage.vue';
-import HomePage from './components/Home.vue'; // Impor HomePage
+import Login from './components/views/Login.vue';
+import Register from './components/views/Register.vue';
+import Home from './components/views/Home.vue';// Mengimpor Unauthorized.vue
 
 const routes = [
-  
     {
         path: '/',
         name: 'Login',
-        component: LoginPage,
+        component: Login, // Ganti ke component di sini
     },
     {
         path: '/register',
         name: 'Register',
-        component: RegisterPage,
+        component: Register, // Ganti ke component di sini
     },
     {
-            path: '/home',
-            component: HomePage,
-            beforeEnter: (to, from, next) => {
-                const isAuthenticated = localStorage.getItem('user');
-                const userRole = JSON.parse(localStorage.getItem('user')).role;
+        path: '/home/pegawai',
+        name: 'Home',
+        component: Home, // Ganti ke component di sini
+        
+    },
 
-                if (isAuthenticated && userRole === 'admin') {
-                    next();
-                } else {
-                    next({ path: '/unauthorized' });
-                }
-            }
-        },
 ];
 
 const router = createRouter({

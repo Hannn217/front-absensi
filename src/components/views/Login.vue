@@ -53,50 +53,46 @@ export default {
   },
   methods: {
     async handleLogin() {
+      this.errorMessage = ""; // Reset error message
+
+      if (!this.isFormValid) {
+        this.errorMessage = "Pastikan semua kolom terisi.";
+        return;
+      }
+
       try {
-        if (!this.isFormValid) {
-          this.errorMessage = "Pastikan semua kolom terisi.";
-          return;
-        }
-
-        // Log the login data for debugging
-        console.log({
-          username: this.username,
-          password: this.password,
-        });
-
         const response = await axios.post('http://localhost:8000/api/login', {
           username: this.username,
           password: this.password,
         });
 
-        // Assume the response contains user data including the role
-        const userData = response.data.user; // Adjust according to your API response structure
-        localStorage.setItem('user', JSON.stringify(userData)); // Save user data in localStorage
+        const userData = response.data.userData; // Periksa struktur respons
+        localStorage.setItem('user', JSON.stringify(userData)); // Simpan data pengguna
 
         alert("Login berhasil!");
 
-        // Redirect to the appropriate home page based on user role
-        switch (userData.role) {
-          case 'super_admin':
+        // Redect lama sesuai jabatan
+        switch (userData.jabatan) {
+          case 'Super Admin':
             this.$router.push('/home/super-admin');
             break;
-          case 'system_admin':
+          case 'System Admin':
             this.$router.push('/home/system-admin');
             break;
-          case 'ketua_kelas':
+          case 'Ketua Kelas':
             this.$router.push('/home/ketua-kelas');
             break;
-          case 'pegawai':
+          case 'Pegawai':
             this.$router.push('/home/pegawai');
+            break;
+          default:
+            this.errorMessage = "Role tidak dikenali.";
             break;
         }
       } catch (error) {
         if (error.response) {
-          console.error(error.response.data);
           this.errorMessage = error.response.data.message || "Login gagal. Coba lagi.";
         } else {
-          console.error(error);
           this.errorMessage = "Login gagal. Coba lagi.";
         }
       }
@@ -106,7 +102,6 @@ export default {
 </script>
 
 <style scoped>
-/* Flexbox untuk memastikan container selalu di tengah */
 body,
 html {
   margin: 0;
