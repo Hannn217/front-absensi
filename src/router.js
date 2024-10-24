@@ -1,35 +1,26 @@
 // src/router.js
 import { createRouter, createWebHistory } from 'vue-router';
-import LoginPage from './components/LoginPage.vue';
-import RegisterPage from './components/RegisterPage.vue';
-import HomePage from './components/Home.vue'; // Impor HomePage
+import Login from './views/Login.vue';
+import Register from './views/Register.vue';
+import Home from './views/Home.vue';
 
 const routes = [
-  
+
     {
         path: '/',
         name: 'Login',
-        component: LoginPage,
+        component: Login,
     },
     {
         path: '/register',
         name: 'Register',
-        component: RegisterPage,
+        component: Register,
     },
     {
-            path: '/home',
-            component: HomePage,
-            beforeEnter: (to, from, next) => {
-                const isAuthenticated = localStorage.getItem('user');
-                const userRole = JSON.parse(localStorage.getItem('user')).role;
-
-                if (isAuthenticated && userRole === 'admin') {
-                    next();
-                } else {
-                    next({ path: '/unauthorized' });
-                }
-            }
-        },
+        path: '/home',
+        name: 'Home',
+        component: Home,
+    },
 ];
 
 const router = createRouter({

@@ -4,28 +4,12 @@
       <h2>Masuk</h2>
       <form @submit.prevent="handleLogin">
         <div class="mb-3">
-          <input
-            type="text"
-            v-model="username"
-            class="form-control"
-            placeholder="User Name"
-            required
-          />
+          <input type="text" v-model="username" class="form-control" placeholder="User Name" required />
         </div>
         <div class="mb-3">
-          <input
-            type="password"
-            v-model="password"
-            class="form-control"
-            placeholder="Kata Sandi"
-            required
-          />
+          <input type="password" v-model="password" class="form-control" placeholder="Kata Sandi" required />
         </div>
-        <button
-          type="submit"
-          class="btn btn-success btn-block"
-          :disabled="!isFormValid"
-        >
+        <button type="submit" class="btn btn-success btn-block" :disabled="!isFormValid">
           Masuk
         </button>
       </form>
@@ -39,6 +23,7 @@
 import axios from 'axios';
 
 export default {
+  name: 'Login',
   data() {
     return {
       username: "",
@@ -60,36 +45,42 @@ export default {
         }
 
         // Log the login data for debugging
-        console.log({
-          username: this.username,
-          password: this.password,
-        });
+        // console.log({
+        //   username: this.username,
+        //   password: this.password,
+        // });
 
         const response = await axios.post('http://localhost:8000/api/login', {
           username: this.username,
           password: this.password,
         });
+        console.log(response.data)
+        // Reset error message when login is successful
+        this.errorMessage = "";
 
         // Assume the response contains user data including the role
         const userData = response.data.user; // Adjust according to your API response structure
-        localStorage.setItem('user', JSON.stringify(userData)); // Save user data in localStorage
+        // console.log(userData)
 
+        if (!userData || !userData.jabatan) {
+          console.log('masuk')
+          this.errorMessage = "Role tidak ditemukan. Hubungi admin.";
+          return;
+        }
+
+        // Simpan user data di localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        // Tampilkan alert login berhasil
         alert("Login berhasil!");
 
-        // Redirect to the appropriate home page based on user role
-        switch (userData.role) {
-          case 'super_admin':
-            this.$router.push('/home/super-admin');
-            break;
-          case 'system_admin':
-            this.$router.push('/home/system-admin');
-            break;
-          case 'ketua_kelas':
-            this.$router.push('/home/ketua-kelas');
-            break;
-          case 'pegawai':
-            this.$router.push('/home/pegawai');
-            break;
+        // Redirect ke halaman berdasarkan role
+        const validRoles = ['super_admin', 'system_admin', 'ketua_kelas', 'pegawai'];
+
+        if (validRoles.includes(userData.jabatan)) {
+          this.$router.push('/home');
+        } else {
+          this.errorMessage = "Role tidak valid.";
         }
       } catch (error) {
         if (error.response) {
