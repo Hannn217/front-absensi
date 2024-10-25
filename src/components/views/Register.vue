@@ -140,6 +140,6 @@ html {
 }
 
 .text-danger {
-  color: #dc3545;
+  color: #b31c2b;
 }
 </style>
