@@ -1,9 +1,10 @@
 <script setup>
-
+import SidebarAdmin from './components/SidebarAdmin.vue';
 
 </script>
 
 <template>
+  <!-- <SidebarAdmin /> -->
 <router-view />
 </template>
 
