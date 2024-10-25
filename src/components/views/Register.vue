@@ -45,7 +45,6 @@ Register.vue
 
       <p v-if="errorMessage" class="text-danger mt-2">{{ errorMessage }}</p>
       <p class="mt-3">Sudah punya akun? <router-link to="/">Login</router-link></p>
-      <p class="mt-3">Sudah punya akun? <router-link to="/">Login</router-link></p>
     </div>
   </div>
 </template>
