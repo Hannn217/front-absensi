@@ -4,28 +4,17 @@
       <h2>Masuk</h2>
       <form @submit.prevent="handleLogin">
         <div class="mb-3">
-          <input
-            type="text"
-            v-model="username"
-            class="form-control"
-            placeholder="User Name"
-            required
-          />
+          <input type="text" v-model="username" class="form-control" placeholder="User Name" required />
         </div>
-        <div class="mb-3">
-          <input
-            type="password"
-            v-model="password"
-            class="form-control"
-            placeholder="Kata Sandi"
-            required
-          />
+        <div class="mb-3 password-container">
+          <input :type="showPassword ? 'text' : 'password'" v-model="password" class="form-control"
+            placeholder="Kata Sandi" required />
+          <!-- Tambahkan ikon untuk toggle lihat/simpan password -->
+          <span class="toggle-password" @click="togglePassword">
+            <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+          </span>
         </div>
-        <button
-          type="submit"
-          class="btn btn-success btn-block"
-          :disabled="!isFormValid"
-        >
+        <button type="submit" class="btn btn-success btn-block" :disabled="!isFormValid">
           Masuk
         </button>
       </form>
@@ -43,6 +32,7 @@ export default {
     return {
       username: "",
       password: "",
+      showPassword: false, // Kontrol untuk toggle password
       errorMessage: "",
     };
   },
@@ -52,6 +42,9 @@ export default {
     },
   },
   methods: {
+    togglePassword() {
+      this.showPassword = !this.showPassword; // Toggle true/false untuk menampilkan atau menyembunyikan password
+    },
     async handleLogin() {
       this.errorMessage = ""; // Reset error message
 
@@ -71,7 +64,7 @@ export default {
 
         alert("Login berhasil!");
 
-        // Redect lama sesuai jabatan
+        // Redireksi sesuai jabatan
         switch (userData.jabatan) {
           case 'Super Admin':
             this.$router.push('/home/super-admin');
@@ -137,5 +130,20 @@ html {
 
 .text-danger {
   color: #dc3545;
+}
+
+/* Tambahkan styling untuk kontainer password */
+.password-container {
+  position: relative;
+}
+
+/* Tambahkan gaya untuk ikon toggle password */
+.toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #6c757d;
 }
 </style>
