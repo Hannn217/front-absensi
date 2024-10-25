@@ -35,13 +35,17 @@ import SidebarAdmin from '../SidebarAdmin.vue';
 export default {
     data() {
         return {
-            username: '',  // Untuk menyimpan username yang didapatkan dari localStorage
+            username: 'Guest',  // Default ke 'Guest' jika tidak ada username
             searchQuery: '', // Untuk search bar
             dropdownVisible: false, // Untuk mengontrol visibility dropdown
         };
     },
     created() {
-        this.username = localStorage.getItem('username'); // Default ke 'Guest' jika tidak ada username
+        const storedUser = localStorage.getItem('user'); // Ambil data user dari localStorage
+        if (storedUser) {
+            const userObject = JSON.parse(storedUser); // Parsing JSON string menjadi objek
+            this.username = userObject.username || 'Guest'; // Set username jika ada, jika tidak ada tampilkan Guest
+        }
     },
     methods: {
         navigateTo(routeName) {
@@ -53,7 +57,7 @@ export default {
         },
         logout() {
             console.log('User logged out');
-            localStorage.removeItem('username');
+            localStorage.removeItem('user');
             this.$router.push({ name: 'Login' });
         },
         toggleDropdown() {
@@ -61,6 +65,11 @@ export default {
         },
         closeDropdown() {
             this.dropdownVisible = false;
+        },
+        handleOutsideClick(event) {
+            if (!this.$el.contains(event.target)) {
+                this.closeDropdown();
+            }
         }
     },
     mounted() {
@@ -68,13 +77,6 @@ export default {
     },
     beforeDestroy() {
         document.removeEventListener('click', this.handleOutsideClick);
-    },
-    methods: {
-        handleOutsideClick(event) {
-            if (!this.$el.contains(event.target)) {
-                this.closeDropdown();
-            }
-        }
     }
 };
 </script>
@@ -145,6 +147,7 @@ export default {
     box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     overflow: hidden;
+    z-index: 1000;
 }
 
 .dropdown-menu ul {
