@@ -28,7 +28,7 @@
         </button>
       </form>
       <p v-if="errorMessage" class="text-danger mt-2">{{ errorMessage }}</p>
-      <p class="mt-3">Sudah punya akun? <router-link to="/login">Login</router-link></p>
+      <p class="mt-3">Sudah punya akun? <router-link to="/">Login</router-link></p>
     </div>
   </div>
 </template>
@@ -46,9 +46,9 @@ export default {
       password: "",
       confirmPassword: "",
       nomor_hp: "",
-      jabatan: "Pegawai", // jadi default kek jabatan
+      jabatan: "Pegawai", // Default jabatan
       errorMessage: "",
-      isLoading: false, // loding e
+      isLoading: false, // Loading state
     };
   },
   computed: {
@@ -65,7 +65,7 @@ export default {
   },
   methods: {
     async handleRegister() {
-      this.errorMessage = ""; // kek reset pesan kesalahan
+      this.errorMessage = ""; // Reset error message
       if (!this.isFormValid) {
         this.errorMessage = "Pastikan semua kolom terisi dan kata sandi cocok.";
         return;
@@ -80,19 +80,24 @@ export default {
           email: this.email,
           password: this.password,
           nomor_hp: this.nomor_hp,
-          jabatan: this.jabatan, // nambeh jabatan ke data yang dikirim kek user
+          jabatan: this.jabatan, // Menyertakan jabatan
         });
 
+        // Simpan token ke localStorage
+        const token = response.data.token; // Sesuaikan dengan struktur respons
+        localStorage.setItem('token', token); // Menyimpan token ke localStorage
+
         alert("Registrasi berhasil!");
-        this.$router.push('/home/pegawai'); // Redirect ke halaman ne men berhasil
+        this.$router.push('/home/pegawai'); // Redirect ke halaman pegawai
       } catch (error) {
+        // Menangani kesalahan
         if (error.response) {
           this.errorMessage = error.response.data.message || "Registrasi gagal. Coba lagi.";
         } else {
           this.errorMessage = "Registrasi gagal. Coba lagi.";
         }
       } finally {
-        this.isLoading = false; // Reset loading men l udeh register
+        this.isLoading = false; // Reset loading state
       }
     },
   },

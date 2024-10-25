@@ -61,17 +61,22 @@ export default {
       }
 
       try {
-        const response = await axios.post('http://localhost:8000/api/login', {
-          username: this.username,
-          password: this.password,
-        });
+        const response = await axios.post(
+          'http://localhost:8000/api/login',
+          {
+            username: this.username,
+            password: this.password,
+          }
+        );
 
-        const userData = response.data.userData; // Periksa struktur respons
-        localStorage.setItem('user', JSON.stringify(userData)); // Simpan data pengguna
+        const userData = response.data.userData;
+        const token = response.data.token; // Ambil token dari respons
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('token', token); // Simpan token ke localStorage
 
         alert("Login berhasil!");
 
-        // Redect lama sesuai jabatan
+        // Redirect sesuai jabatan
         switch (userData.jabatan) {
           case 'Super Admin':
             this.$router.push('/home/super-admin');
@@ -91,9 +96,9 @@ export default {
         }
       } catch (error) {
         if (error.response) {
-          this.errorMessage = error.response.data.message || "Login gagal. Coba lagi.";
+          this.errorMessage = error.response.data.message || "Login gagal. Periksa username dan password.";
         } else {
-          this.errorMessage = "Login gagal. Coba lagi.";
+          this.errorMessage = "Terjadi kesalahan. Coba lagi.";
         }
       }
     },
