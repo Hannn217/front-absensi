@@ -129,6 +129,7 @@
 import axios from 'axios';
 
 export default {
+  name: 'UserDashboard',
   data() {
     return {
       username: localStorage.getItem('username') || '',
