@@ -4,7 +4,7 @@ import SidebarAdmin from '../SidebarAdmin.vue';
 
 <template>
     <div class="dashboard-container">
-        <SidebarAdmin />
+        <!-- <SidebarAdmin /> -->
         <!-- Bagian kanan untuk konten (header, search bar, dll.) -->
         <div class="content-area">
             <!-- Header untuk search bar dan user button -->
