@@ -74,7 +74,7 @@
     </div>
 
     <transition name="fade">
-      <div>
+      <div v-if="showSuccessNotification || showErrorNotification">
         <div v-if="showSuccessNotification" class="success-notification">
           Absen berhasil!
         </div>
@@ -126,106 +126,137 @@
 </template>
 
 <script>
-import axios from 'axios'; // Import axios
+import axios from 'axios';
 
 export default {
-  name: 'UserDashboard',
   data() {
     return {
-      // Existing data properties...
+      absenHistory: [],
+      searchQuery: '',
+      username: '',
+      dropdownVisible: false,
+      currentView: 'history',
       modalVisible: false,
-      form: {
-        nama: '',
-        username: '',
-        keterangan: 'hadir',
-        alasan: '',
-        nama_kelas: '',
-        date: ''
-      },
-      absenHistory: [], // Assuming this array holds the absen records
       showSuccessNotification: false,
       showErrorNotification: false,
       errorMessage: '',
+      isEditing: false,
       message: '',
-      isEditing: false, // To manage edit mode if needed
-      apiUrl: '/pegawai/absen', // API endpoint for absensi
-
-      // Added missing properties
-      searchQuery: '',
-      username: '', // Set your username dynamically as needed
-      dropdownVisible: false,
-      currentView: 'home' // Set your default view; change as needed
-    };
-  },
-  methods: {
-    showModal() {
-      this.modalVisible = true;
-      this.resetForm(); // Reset the form when showing modal
-    },
-    closeModal() {
-      this.modalVisible = false;
-    },
-    async submitAbsen() {
-      // Validate the form if necessary
-      if (this.form.nama && this.form.nama_kelas && this.form.keterangan && this.form.alasan && this.form.date) {
-        try {
-          // Send a POST request to the API
-          const response = await axios.post(this.apiUrl, {
-            ...this.form,
-            timestamp: new Date().toISOString(), // Capture timestamp
-          });
-
-          // Assuming response returns the created record
-          this.absenHistory.push(response.data);
-          this.showSuccessNotification = true;
-          this.message = 'Absen berhasil!';
-
-          // Reset the form
-          this.resetForm();
-          this.closeModal();
-        } catch (error) {
-          this.showErrorNotification = true;
-          this.errorMessage = error.response?.data?.message || 'Gagal Absen!';
-        }
-      } else {
-        this.showErrorNotification = true;
-        this.errorMessage = 'Please fill in all fields!';
-      }
-    },
-    resetForm() {
-      this.form = {
+      form: {
         nama: '',
         username: '',
-        keterangan: 'hadir',
+        keterangan: '',
         alasan: '',
         nama_kelas: '',
         date: ''
-      };
-      this.message = '';
+      }
+    };
+  },
+  computed: {
+    filteredAbsenHistory() {
+      return this.absenHistory.filter(record => {
+        return record.nama.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+               record.nama_kelas.toLowerCase().includes(this.searchQuery.toLowerCase());
+      });
+    }
+  },
+  methods: {
+    async fetchAbsenHistory() {
+      try {
+        const token = localStorage.getItem('authToken');
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+        const response = await axios.get('http://localhost:8000/api/pegawai/absen/history', config);
+        this.absenHistory = response.data;
+      } catch (error) {
+        console.error('Error fetching absence history:', error);
+      }
     },
     toggleDropdown() {
-      this.dropdownVisible = !this.dropdownVisible; // Toggle dropdown visibility
+      this.dropdownVisible = !this.dropdownVisible;
     },
-    // Other existing methods (navigateTo, logout, deleteAbsen, etc.)
+    navigateTo(view) {
+      this.currentView = view;
+    },
+    logout() {
+      localStorage.removeItem('authToken');
+      this.isLoggedIn = false;
+    },
+    showModal() {
+      this.modalVisible = true;
+    },
+    closeModal() {
+      this.modalVisible = false;
+      this.isEditing = false;
+      this.form = { nama: '', username: '', keterangan: '', alasan: '', nama_kelas: '', date: '' };
+    },
+    async submitAbsen() {
+      try {
+        const token = localStorage.getItem('authToken');
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+        
+        if (this.isEditing) {
+          // Update existing record
+          await axios.put(`api/pegawai/absen`, this.form, config);
+        } else {
+          // Create new record
+          await axios.post('/pegawai/absen', this.form, config);
+        }
+
+        this.showSuccessNotification = true;
+        this.fetchAbsenHistory();
+        this.closeModal();
+      } catch (error) {
+        this.showErrorNotification = true;
+        this.errorMessage = 'Failed to submit absence';
+      }
+    },
+    async deleteAbsen(id) {
+      try {
+        const token = localStorage.getItem('authToken');
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        };
+        await axios.delete(`http://localhost:8000/api/pegawai/absen/${id}`, config);
+        this.fetchAbsenHistory();
+      } catch (error) {
+        console.error('Error deleting absence:', error);
+      }
+    }
+  },
+  created() {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      this.isLoggedIn = true;
+      this.fetchAbsenHistory();
+    }
   }
 };
 </script>
-
 
 <style scoped>
 .dashboard-container {
   display: flex;
   height: 100vh;
-  font-family: 'Arial', sans-serif; /* Elegant font */
+  font-family: 'Arial', sans-serif;
 }
 
 .sidebar {
   width: 250px;
-  background-color: #2c3e50; /* Darker background for elegance */
-  color: #ecf0f1; /* Light text color */
+  background-color: #2c3e50;
+  color: #ecf0f1;
   padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3); /* Subtle shadow */
-  transition: width 0.3s; /* Smooth transition */
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+  transition: width 0.3s;
 }
 
 .sidebar h2 {
@@ -241,35 +272,33 @@ export default {
 .sidebar li {
   padding: 15px;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s; /* Animation */
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .sidebar li:hover {
-  background-color: #34495e; /* Slightly lighter on hover */
-  transform: scale(1.05); /* Scale effect */
+  background-color: #34495e;
+  transform: scale(1.05);
 }
 
 .content-area {
   flex: 1;
   padding: 20px;
-  background-color: #ecf0f1; /* Light background for contrast */
+  background-color: #ecf0f1;
+  position: relative;
 }
 
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
-  background-color: #3498db; /* Elegant color */
-  color: white;
-  border-radius: 5px; /* Rounded corners */
+  margin-bottom: 20px;
 }
 
 .search-input {
-  padding: 8px;
-  border-radius: 4px;
-  border: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+  width: 200px;
 }
 
 .user-dropdown {
@@ -279,18 +308,19 @@ export default {
 .user-button {
   background: none;
   border: none;
-  color: white;
+  color: #2c3e50;
   cursor: pointer;
+  font-size: 18px;
 }
 
 .dropdown-menu {
   position: absolute;
   right: 0;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  z-index: 10;
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 1000;
 }
 
 .dropdown-menu ul {
@@ -305,55 +335,41 @@ export default {
 }
 
 .dropdown-menu li:hover {
-  background-color: #f0f0f0;
+  background-color: #f2f2f2;
 }
 
 .main-content {
-  margin-top: 20px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .absen-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 20px;
 }
 
 .absen-table th,
 .absen-table td {
-  border: 1px solid #ddd;
   padding: 10px;
-  text-align: center; /* Centered text for better readability */
-}
-
-.absen-table th {
-  background-color: #3498db; /* Header color */
-  color: white;
+  border: 1px solid #bdc3c7;
+  text-align: left;
 }
 
 .add-absen-button {
   padding: 10px 15px;
-  background-color: #2ecc71; /* New color */
+  background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
   margin-top: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Shadow effect */
-  transition: background-color 0.3s;
 }
 
 .add-absen-button:hover {
-  background-color: #27ae60; /* Darker green on hover */
-}
-
-.delete-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #e74c3c; /* Elegant red color */
-}
-
-.delete-button:hover {
-  color: #c0392b; /* Darker red on hover */
+  background-color: #2980b9;
 }
 
 .modal {
@@ -362,19 +378,19 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6); /* Dark background for modal */
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 999;
 }
 
 .modal-content {
-  background: white;
+  background-color: white;
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  width: 400px; /* Fixed width */
+  width: 400px;
 }
 
 .close {
@@ -392,47 +408,55 @@ export default {
   margin-bottom: 5px;
 }
 
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #bdc3c7;
+  border-radius: 5px;
+}
+
 .submit-button {
   padding: 10px 15px;
-  background-color: #3498db; /* Elegant color */
+  background-color: #2ecc71;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
 .submit-button:hover {
-  background-color: #2980b9; /* Darker blue on hover */
+  background-color: #27ae60;
 }
 
-.success-notification {
-  background-color: #2ecc71;
-  color: white;
-  padding: 10px;
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  border-radius: 5px;
-  z-index: 1000;
-}
-
-.error-notification {
-  background-color: #e74c3c;
-  color: white;
-  padding: 10px;
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  border-radius: 5px;
-  z-index: 1000;
+.message {
+  margin-top: 10px;
+  color: #e74c3c;
 }
 
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.5s;
 }
-.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+
+.fade-enter,
+.fade-leave-to /* .fade-leave-active in <2.1.8 */ {
   opacity: 0;
+}
+
+.success-notification {
+  background-color: #2ecc71;
+  color: white;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 5px;
+}
+
+.error-notification {
+  background-color: #e74c3c;
+  color: white;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 5px;
 }
 </style>
