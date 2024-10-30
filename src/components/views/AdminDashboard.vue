@@ -33,6 +33,7 @@ import SidebarAdmin from '../SidebarAdmin.vue';
 
 <script>
 export default {
+    name: 'AdminDashboard',
     data() {
         return {
             username: 'Guest',  // Default ke 'Guest' jika tidak ada username

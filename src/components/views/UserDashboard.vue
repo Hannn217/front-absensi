@@ -129,6 +129,7 @@
 import axios from 'axios'; // Import axios
 
 export default {
+  name: 'UserDashboard',
   data() {
     return {
       // Existing data properties...

@@ -18,10 +18,10 @@
   <script>
   import { ref, onMounted } from 'vue';
   import axios from 'axios';
-  import Navbar from './Navbar.vue';
+  import Navbar from '../Navbar.vue';
   
   export default {
-    name: 'Profile',
+    name: 'ProfileAdmin',
     components: {
       Navbar,
     },
