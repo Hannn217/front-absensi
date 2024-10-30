@@ -9,13 +9,13 @@
         <div class="mb-3 password-container">
           <input :type="showPassword ? 'text' : 'password'" v-model="password" class="form-control"
             placeholder="Kata Sandi" required />
-          <!-- Tambahkan ikon untuk toggle lihat/simpan password -->
           <span class="toggle-password" @click="togglePassword">
             <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
           </span>
         </div>
-        <button type="submit" class="btn btn-success btn-block" :disabled="!isFormValid">
-          Masuk
+        <button type="submit" class="btn btn-success btn-block" :disabled="!isFormValid || isLoading">
+          <span v-if="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+          <span v-if="!isLoading">Masuk</span>
         </button>
       </form>
       <p v-if="errorMessage" class="text-danger mt-2">{{ errorMessage }}</p>
@@ -32,7 +32,8 @@ export default {
     return {
       username: "",
       password: "",
-      showPassword: false, // Kontrol untuk toggle password
+      showPassword: false,
+      isLoading: false, // Kontrol untuk loading
       errorMessage: "",
     };
   },
@@ -43,33 +44,31 @@ export default {
   },
   methods: {
     togglePassword() {
-      this.showPassword = !this.showPassword; // Toggle true/false untuk menampilkan atau menyembunyikan password
+      this.showPassword = !this.showPassword;
     },
     async handleLogin() {
-      this.errorMessage = ""; // Reset error message
-
+      this.errorMessage = "";
       if (!this.isFormValid) {
         this.errorMessage = "Pastikan semua kolom terisi.";
         return;
       }
 
+      this.isLoading = true; // Mulai loading
+
       try {
-        const response = await axios.post(
-          'http://localhost:8000/api/login',
-          {
-            username: this.username,
-            password: this.password,
-          }
-        );
+        const response = await axios.post('http://localhost:8000/api/login', {
+          username: this.username,
+          password: this.password,
+        });
 
         const userData = response.data.userData;
-        const token = response.data.token; // Ambil token dari respons
+        const token = response.data.token;
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', token); // Simpan token ke localStorage
+        localStorage.setItem('token', token);
 
         alert("Login berhasil!");
 
-        // Redireksi sesuai jabatan
+        // Redect lama sesuai jabatan
         switch (userData.jabatan) {
           case 'Super Admin':
             this.$router.push('/home/super-admin');
@@ -93,6 +92,8 @@ export default {
         } else {
           this.errorMessage = "Terjadi kesalahan. Coba lagi.";
         }
+      } finally {
+        this.isLoading = false; // Akhiri loading
       }
     },
   },
@@ -137,12 +138,10 @@ html {
   color: #dc3545;
 }
 
-/* Tambahkan styling untuk kontainer password */
 .password-container {
   position: relative;
 }
 
-/* Tambahkan gaya untuk ikon toggle password */
 .toggle-password {
   position: absolute;
   top: 50%;
@@ -150,5 +149,9 @@ html {
   transform: translateY(-50%);
   cursor: pointer;
   color: #6c757d;
+}
+
+.spinner-border {
+  vertical-align: middle;
 }
 </style>
