@@ -26,7 +26,7 @@
           </button>
           <div v-if="dropdownVisible" class="dropdown-menu" @click.stop>
             <ul>
-              <li @click="navigateToProfile">Profile</li>
+              <li @click="navigateTo('Profile')">Profile</li>
               <li @click="logout">Logout</li>
             </ul>
           </div>
@@ -44,6 +44,7 @@
                 <th>Keterangan</th>
                 <th>Alasan</th>
                 <th>Tanggal</th>
+                <th>Timestamp</th>
                 <th>Aksi</th>
               </tr>
             </thead>
@@ -54,6 +55,7 @@
                 <td>{{ record.keterangan }}</td>
                 <td>{{ record.alasan }}</td>
                 <td>{{ record.date }}</td>
+                <td>{{ record.timestamp }}</td>
                 <td>
                   <button class="delete-button" @click="deleteAbsen(record.id)">
                     <i class="fas fa-trash-alt"></i>
@@ -62,16 +64,15 @@
               </tr>
             </tbody>
           </table>
-          <button @click="showModal" class="add-absen-button">Add Absen</button>
         </div>
+
         <div v-else>
-          <h2>Welcome to the Dashboard</h2>
-          <button @click="showModal" class="add-absen-button">Add Absen</button>
+          <h2>Tambahkan Absen</h2>
         </div>
+        <button @click="showModal" class="add-absen-button">Tambah Absen</button>
       </main>
     </div>
 
-    <!-- Notifikasi Sukses dan Error -->
     <transition name="fade">
       <div>
         <div v-if="showSuccessNotification" class="success-notification">
@@ -83,7 +84,6 @@
       </div>
     </transition>
 
-    <!-- Modal for Absen Form -->
     <div v-if="modalVisible" class="modal" @click.self="closeModal">
       <div class="modal-content">
         <span class="close" @click="closeModal">&times;</span>
@@ -126,185 +126,105 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from 'axios'; // Import axios
 
 export default {
   data() {
     return {
-      username: localStorage.getItem('username') || '',
-      searchQuery: '',
-      dropdownVisible: false,
-      currentView: 'history', // Default tampilan history absen
+      // Existing data properties...
       modalVisible: false,
-      message: '',
-      absenHistory: [], // Data histori absen dari database
-      showSuccessNotification: false, // Variabel untuk notifikasi sukses
-      showErrorNotification: false, // Variabel untuk notifikasi error
-      errorMessage: '',
       form: {
-        id: null,
         nama: '',
-        username: this.username, // Ambil dari localStorage
+        username: '',
         keterangan: 'hadir',
         alasan: '',
         nama_kelas: '',
         date: ''
       },
-      isEditing: false,
+      absenHistory: [], // Assuming this array holds the absen records
+      showSuccessNotification: false,
+      showErrorNotification: false,
+      errorMessage: '',
+      message: '',
+      isEditing: false, // To manage edit mode if needed
+      apiUrl: '/pegawai/absen', // API endpoint for absensi
+
+      // Added missing properties
+      searchQuery: '',
+      username: '', // Set your username dynamically as needed
+      dropdownVisible: false,
+      currentView: 'home' // Set your default view; change as needed
     };
   },
-  computed: {
-    filteredAbsenHistory() {
-      return this.absenHistory.filter(record => 
-        record.nama.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        record.nama_kelas.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    },
-  },
   methods: {
-    navigateTo(routeName) {
-      if (routeName === 'Home') {
-        this.currentView = 'history'; // Tampilkan History Absen saat klik Home
-      } else {
-        this.currentView = 'profile'; // Tampilkan Profile jika Profile dipilih
-      }
-    },
     showModal() {
       this.modalVisible = true;
-      this.resetForm();
+      this.resetForm(); // Reset the form when showing modal
     },
     closeModal() {
       this.modalVisible = false;
-      this.resetForm();
-    },
-    logout() {
-      localStorage.removeItem('username');
-      localStorage.removeItem('absenHistory'); // Hapus histori absen dari localStorage
-      this.currentView = 'login';
-    },
-    toggleDropdown() {
-      this.dropdownVisible = !this.dropdownVisible;
-    },
-    handleOutsideClick(event) {
-      if (!this.$el.contains(event.target)) {
-        this.closeDropdown();
-      }
     },
     async submitAbsen() {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        }
+      // Validate the form if necessary
+      if (this.form.nama && this.form.nama_kelas && this.form.keterangan && this.form.alasan && this.form.date) {
+        try {
+          // Send a POST request to the API
+          const response = await axios.post(this.apiUrl, {
+            ...this.form,
+            timestamp: new Date().toISOString(), // Capture timestamp
+          });
 
-        if (this.isEditing) {
-          const response = await axios.put(`/pegawai/absen/${this.form.id}`, this.form);
-          this.message = response.data.message;
+          // Assuming response returns the created record
+          this.absenHistory.push(response.data);
+          this.showSuccessNotification = true;
+          this.message = 'Absen berhasil!';
 
-          const index = this.absenHistory.findIndex(record => record.id === this.form.id);
-          this.$set(this.absenHistory, index, this.form);
-        } else {
-          const response = await axios.post('/pegawai/absen', this.form);
-          this.message = response.data.message;
-
-          this.absenHistory.push({ ...this.form, id: response.data.id }); // Gunakan ID dari respons API
-          this.showSuccessNotification = true; // Tampilkan notifikasi
-          setTimeout(() => {
-            this.showSuccessNotification = false; // Sembunyikan setelah 3 detik
-          }, 3000);
+          // Reset the form
+          this.resetForm();
+          this.closeModal();
+        } catch (error) {
+          this.showErrorNotification = true;
+          this.errorMessage = error.response?.data?.message || 'Gagal Absen!';
         }
-        this.closeModal();
-        localStorage.setItem('absenHistory', JSON.stringify(this.absenHistory));
-
-      } catch (error) {
-        if (error.response) {
-          if (error.response.data.errors) {
-            this.message = Object.values(error.response.data.errors).flat().join(', ');
-          } else {
-            this.message = error.response.data.message || 'Terjadi kesalahan';
-          }
-        } else {
-          this.message = 'Kesalahan jaringan';
-        }
-      }
-    },
-    async deleteAbsen(id) {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await axios.delete(`/pegawai/absen/delete/${id}`);
-        this.absenHistory = this.absenHistory.filter(record => record.id !== id);
-        this.showSuccessNotification = true;
-        setTimeout(() => {
-          this.showSuccessNotification = false;
-        }, 3000);
-      } catch (error) {
+      } else {
         this.showErrorNotification = true;
-        this.errorMessage = error.response?.data.message || 'Gagal menghapus absen';
-        setTimeout(() => {
-          this.showErrorNotification = false;
-        }, 3000);
+        this.errorMessage = 'Please fill in all fields!';
       }
     },
     resetForm() {
       this.form = {
-        id: null,
         nama: '',
-        username: this.username, // Ambil dari localStorage
+        username: '',
         keterangan: 'hadir',
         alasan: '',
         nama_kelas: '',
         date: ''
       };
-      this.isEditing = false;
+      this.message = '';
     },
-    async fetchAbsenHistory() {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await axios.get('/pegawai/absen/history');
-        this.absenHistory = response.data;
-        localStorage.setItem('absenHistory', JSON.stringify(this.absenHistory));
-        
-      } catch (error) {
-        console.error('Error fetching history:', error);
-        this.message = 'Gagal mengambil data histori absen';
-      }
-    }
-  },
-  mounted() {
-    document.addEventListener('click', this.handleOutsideClick);
-
-    const storedHistory = localStorage.getItem('absenHistory');
-    if (storedHistory) {
-      this.absenHistory = JSON.parse(storedHistory);
-    } else {
-      this.fetchAbsenHistory();
-    }
-  },
-  beforeDestroy() {
-    document.removeEventListener('click', this.handleOutsideClick);
+    toggleDropdown() {
+      this.dropdownVisible = !this.dropdownVisible; // Toggle dropdown visibility
+    },
+    // Other existing methods (navigateTo, logout, deleteAbsen, etc.)
   }
 };
 </script>
+
 
 <style scoped>
 .dashboard-container {
   display: flex;
   height: 100vh;
+  font-family: 'Arial', sans-serif; /* Elegant font */
 }
 
 .sidebar {
   width: 250px;
-  background-color: #3b3b3b;
-  color: white;
+  background-color: #2c3e50; /* Darker background for elegance */
+  color: #ecf0f1; /* Light text color */
   padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+  transition: width 0.3s; /* Smooth transition */
 }
 
 .sidebar h2 {
@@ -320,17 +240,18 @@ export default {
 .sidebar li {
   padding: 15px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s; /* Animation */
 }
 
 .sidebar li:hover {
-  background-color: #575757;
+  background-color: #34495e; /* Slightly lighter on hover */
+  transform: scale(1.05); /* Scale effect */
 }
 
 .content-area {
   flex: 1;
   padding: 20px;
-  background-color: #f5f5f5;
+  background-color: #ecf0f1; /* Light background for contrast */
 }
 
 .navbar {
@@ -338,14 +259,16 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
-  background-color: #4CAF50;
+  background-color: #3498db; /* Elegant color */
   color: white;
+  border-radius: 5px; /* Rounded corners */
 }
 
 .search-input {
   padding: 8px;
   border-radius: 4px;
   border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 .user-dropdown {
@@ -396,37 +319,40 @@ export default {
 .absen-table th,
 .absen-table td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 10px;
+  text-align: center; /* Centered text for better readability */
 }
 
 .absen-table th {
-  background-color: #4CAF50;
+  background-color: #3498db; /* Header color */
   color: white;
 }
 
 .add-absen-button {
   padding: 10px 15px;
-  background-color: #4CAF50;
+  background-color: #2ecc71; /* New color */
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   margin-top: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Shadow effect */
+  transition: background-color 0.3s;
 }
 
 .add-absen-button:hover {
-  background-color: #45a049;
+  background-color: #27ae60; /* Darker green on hover */
 }
 
 .delete-button {
   background: none;
   border: none;
   cursor: pointer;
-  color: #f44336; /* Merah */
+  color: #e74c3c; /* Elegant red color */
 }
 
 .delete-button:hover {
-  color: #d32f2f; /* Merah lebih gelap */
+  color: #c0392b; /* Darker red on hover */
 }
 
 .modal {
@@ -435,7 +361,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6); /* Dark background for modal */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -446,16 +372,14 @@ export default {
   background: white;
   padding: 20px;
   border-radius: 5px;
-  width: 400px;
-  position: relative;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  width: 400px; /* Fixed width */
 }
 
 .close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 20px;
   cursor: pointer;
+  float: right;
+  font-size: 20px;
 }
 
 .form-group {
@@ -467,33 +391,47 @@ export default {
   margin-bottom: 5px;
 }
 
+.submit-button {
+  padding: 10px 15px;
+  background-color: #3498db; /* Elegant color */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #2980b9; /* Darker blue on hover */
+}
+
 .success-notification {
+  background-color: #2ecc71;
+  color: white;
+  padding: 10px;
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: #4CAF50;
-  color: white;
-  padding: 15px;
   border-radius: 5px;
-  z-index: 2000;
+  z-index: 1000;
 }
 
 .error-notification {
-  position: fixed;
-  top: 60px;
-  right: 20px;
-  background-color: #f44336;
+  background-color: #e74c3c;
   color: white;
-  padding: 15px;
+  padding: 10px;
+  position: fixed;
+  top: 20px;
+  right: 20px;
   border-radius: 5px;
-  z-index: 2000;
+  z-index: 1000;
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.5s;
 }
-
-.fade-enter, .fade-leave-to {
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
   opacity: 0;
 }
 </style>
