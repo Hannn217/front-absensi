@@ -9,6 +9,9 @@
         <li @click="showAbsenModal">
           <i class="fas fa-calendar-check"></i> Absen
         </li>
+        <li @click="showLeaveModal">
+          <i class="fas fa-plane"></i> Pengajuan Cuti
+        </li>
       </ul>
     </div>
 
@@ -18,7 +21,7 @@
         <div class="profile">
           <img src="https://via.placeholder.com/50" alt="Profile Picture" class="profile-img" />
           <span class="profile-name">{{ userName }}</span>
-          <span class="username-display">({{ username }})</span>
+          <span class="username-display">{{ username }}</span>
         </div>
       </div>
 
@@ -30,9 +33,10 @@
           v-for="(item, index) in dashboardItems"
           :key="index"
           :style="{ borderLeft: item.color }"
+          @click="index === 1 ? openGoogleMaps() : null"
         >
           <div class="card-icon" :style="{ color: item.color.split(' ')[2] }">
-            <i class="fas" :class="index === 0 ? 'fa-calendar-check' : (index === 1 ? 'fa-chalkboard-teacher' : (index === 2 ? 'fa-book' : 'fa-users'))"></i>
+            <i class="fas" :class="getCardIcon(index)"></i>
             <span v-if="index === 0 && absenceNotification" class="notif">{{ absenceNotification }}</span>
           </div>
           <h3>{{ item.title }}</h3>
@@ -40,12 +44,17 @@
         </div>
       </div>
 
-      <button @click="showAbsenModal" class="add-absen-button full-width">Tambah Absen</button>
+      <button @click="showAbsenModal" class="add-absen-button full-width">
+        <i class="fas fa-plus-circle"></i> Tambah Absen
+      </button>
 
-      <!-- Attendance Modal -->
+      <button @click="showLeaveModal" class="add-absen-button full-width">
+        <i class="fas fa-plane"></i> Pengajuan Cuti
+      </button>
+
       <div v-if="showModal" class="modal-overlay">
         <div class="modal-content">
-          <h2>Absen Pegawai</h2>
+          <h2>Absen Pegawai <button class="close-modal" @click="closeModal">&times;</button></h2>
           <form @submit.prevent="submitAttendance">
             <label for="nama">Nama:</label>
             <input v-model="attendanceData.nama" type="text" required />
@@ -74,6 +83,26 @@
               <button type="button" @click="closeModal">Batal</button>
             </div>
           </form>
+          <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+        </div>
+      </div>
+
+      <div v-if="showLeaveModal" class="modal-overlay">
+        <div class="modal-content">
+          <h2>Pengajuan Cuti <button class="close-modal" @click="closeLeaveModal">&times;</button></h2>
+          <form @submit.prevent="submitLeave">
+            <label for="leaveReason">Alasan Cuti:</label>
+            <input v-model="leaveData.reason" type="text" required />
+
+            <label for="leaveDate">Tanggal Cuti:</label>
+            <input v-model="leaveData.date" type="date" required />
+
+            <div class="modal-buttons">
+              <button type="submit" :disabled="loadingLeave">{{ loadingLeave ? 'Mengirim...' : 'Ajukan Cuti' }}</button>
+              <button type="button" @click="closeLeaveModal">Batal</button>
+            </div>
+          </form>
+          <p v-if="leaveErrorMessage" class="error-message">{{ leaveErrorMessage }}</p>
         </div>
       </div>
     </div>
@@ -87,20 +116,18 @@ export default {
   data() {
     return {
       showModal: false,
+      showLeaveModal: false,
       loading: false,
-      attendanceData: {
-        nama: '',
-        username: '',
-        keterangan: '',
-        alasan: '',
-        nama_kelas: '',
-        date: new Date().toISOString().slice(0, 10),
-      },
+      loadingLeave: false,
+      errorMessage: '',
+      leaveErrorMessage: '',
+      attendanceData: this.initializeAttendanceData(),
+      leaveData: this.initializeLeaveData(),
       dashboardItems: [
         { title: 'JUMLAH ABSEN HARI INI', subtitle: 'Belum Absen', color: '5px solid #e74c3c' },
-        { title: 'KELAS YANG DIAJARKAN', subtitle: '2 (Kelas)', color: '5px solid #f39c12' },
-        { title: 'MATA KULIAH YANG DIAJARKAN', subtitle: '1 (Mata Kuliah)', color: '5px solid #3498db' },
-        { title: 'TOTAL ABSENSI', subtitle: '0', color: '5px solid #2ecc71' },
+        { title: 'MAPS BMP', subtitle: 'CLICK DISINI', color: '5px solid #f39c12' },
+        { title: 'PROFILE ANDA', subtitle: 'CLICK UNTUK MELIHAT PROFILE ANDA', color: '5px solid #3498db' },
+        { title: 'HISTORY ABSENSI', subtitle: 'DEFAULT', color: '5px solid #2ecc71' },
       ],
       userName: '',
       username: '',
@@ -116,17 +143,12 @@ export default {
       this.username = user.username;
       this.checkAttendance();
     }
-
-    // Update current time every second
     this.timeInterval = setInterval(() => {
       this.currentTime = new Date().toLocaleString();
     }, 1000);
-
-    // Polling for attendance updates every 5 seconds
     this.pollAttendanceUpdates();
   },
   beforeDestroy() {
-    // Clear the time interval when component is destroyed
     clearInterval(this.timeInterval);
   },
   methods: {
@@ -135,12 +157,22 @@ export default {
     },
     showAbsenModal() {
       this.showModal = true;
-      this.attendanceData.username = this.username; // Set username for attendance
-      this.attendanceData.nama = this.userName; // Set name for attendance
+      this.attendanceData.username = this.username;
+      this.attendanceData.nama = this.userName;
     },
     closeModal() {
       this.showModal = false;
-      this.attendanceData = { nama: '', username: '', keterangan: '', alasan: '', nama_kelas: '', date: new Date().toISOString().slice(0, 10) };
+      this.errorMessage = '';
+      this.resetAttendanceData();
+    },
+    showLeaveModal() {
+      this.showLeaveModal = true;
+      this.leaveData = this.initializeLeaveData();
+    },
+    closeLeaveModal() {
+      this.showLeaveModal = false;
+      this.leaveErrorMessage = '';
+      this.resetLeaveData();
     },
     async submitAttendance() {
       this.loading = true;
@@ -155,19 +187,70 @@ export default {
         this.checkAttendance();
       } catch (error) {
         console.error('Error submitting attendance:', error);
-        alert('Terjadi kesalahan saat mengirim absensi. Silakan coba lagi.');
+        this.errorMessage = 'Terjadi kesalahan saat mengirim absensi. Silakan coba lagi.';
       } finally {
         this.loading = false;
       }
     },
+    async submitLeave() {
+      this.loadingLeave = true;
+      try {
+        const response = await axios.post('http://localhost:8000/api/pegawai/cuti', this.leaveData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        this.leaveErrorMessage = 'Pengajuan cuti berhasil!';
+        this.closeLeaveModal();
+      } catch (error) {
+        console.error('Error submitting leave request:', error);
+        this.leaveErrorMessage = 'Terjadi kesalahan saat mengajukan cuti. Silakan coba lagi.';
+      } finally {
+        this.loadingLeave = false;
+      }
+    },
     async checkAttendance() {
-      // Logic to check attendance status
-      this.absenceNotification = '1'; // Ubah sesuai logika
+      this.absenceNotification = '1';
     },
     pollAttendanceUpdates() {
       setInterval(() => {
         this.checkAttendance();
-      }, 5000); // Update every 5 seconds
+      }, 5000);
+    },
+    getCardIcon(index) {
+      const icons = [
+        'fa-calendar-check',
+        'fa-map',
+        'fa-book',
+        'fa-users'
+      ];
+      return icons[index] || '';
+    },
+    resetAttendanceData() {
+      this.attendanceData = this.initializeAttendanceData();
+    },
+    resetLeaveData() {
+      this.leaveData = this.initializeLeaveData();
+    },
+    initializeAttendanceData() {
+      return {
+        nama: '',
+        username: '',
+        keterangan: '',
+        alasan: '',
+        nama_kelas: '',
+        date: new Date().toISOString().slice(0, 10),
+      };
+    },
+    initializeLeaveData() {
+      return {
+        reason: '',
+        date: new Date().toISOString().slice(0, 10),
+      };
+    },
+    openGoogleMaps() {
+      const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=Jl.+Pulau+Bangka,+Kec.+Bukitintan,+Kota+Pangkalpinang,+Provinsi+Kepulauan+Bangka+Belitung+33149';
+      window.open(mapsUrl, '_blank', 'width=600,height=400');
     },
   },
 };
@@ -240,18 +323,12 @@ export default {
   align-items: center;
   padding: 15px 20px;
   background-color: #ffffff;
-  border-bottom: 1px solid #e0e4e7;
+  border-bottom: 1px solid #ddd;
 }
 
-/* Styles for Last Login and Current Time */
 .last-login {
-  color: #3498db; /* Change color for Last Login */
-  font-weight: 500;
-}
-
-.current-time {
-  color: #e74c3c; /* Change color for Current Time */
-  font-weight: 500;
+  font-size: 14px;
+  color: #7f8c8d;
 }
 
 .profile {
@@ -260,53 +337,64 @@ export default {
 }
 
 .profile-img {
-  width: 50px;
-  height: 50px;
   border-radius: 50%;
-  margin-right: 10px;
+  width: 40px;
+  height: 40px;
 }
 
 .profile-name {
-  font-weight: 700;
+  font-weight: bold;
+  margin-left: 10px;
 }
 
 .username-display {
-  font-weight: 400;
+  margin-left: 5px;
   color: #7f8c8d;
 }
 
 /* Stats Cards */
 .stats-cards {
-  display: flex; /* Change to flex for horizontal layout */
-  justify-content: space-between; /* Space between cards */
+  display: flex;
+  gap: 20px;
   margin: 20px 0;
-  flex-wrap: wrap; /* Allow wrapping if screen is small */
 }
 
 .card {
-  background-color: #fff;
+  flex: 1;
+  background-color: #ecf0f1;
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
-  width: calc(25% - 15px); /* Each card takes 25% of the width minus some margin */
-  margin-bottom: 20px; /* Space between rows */
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Button Styles */
+.card-icon {
+  font-size: 30px;
+}
+
+/* Button Styling */
 .add-absen-button {
-  background-color: #2ecc71;
-  color: white;
-  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
   border: none;
-  border-radius: 5px;
-  cursor: pointer;
+  border-radius: 4px;
+  background-color: #3498db; /* Primary color */
+  color: white;
   font-size: 16px;
-  transition: background-color 0.3s;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+  margin: 20px 0; /* Margin for spacing */
 }
 
 .add-absen-button:hover {
-  background-color: #27ae60;
+  background-color: #2980b9; /* Darker shade on hover */
+  transform: scale(1.05);
+}
+
+.add-absen-button i {
+  margin-right: 5px; /* Space between icon and text */
 }
 
 /* Modal Styles */
@@ -316,19 +404,26 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
 }
 
 .modal-content {
-  background-color: white;
-  padding: 30px;
+  background: #fff;
+  padding: 20px;
   border-radius: 8px;
   width: 400px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.close-modal {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  float: right;
 }
 
 .modal-buttons {
@@ -337,16 +432,8 @@ export default {
   margin-top: 20px;
 }
 
-.modal-buttons button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.modal-buttons button:hover {
-  background-color: #2ecc71;
-  color: white;
+.error-message {
+  color: red;
+  font-size: 14px;
 }
 </style>
