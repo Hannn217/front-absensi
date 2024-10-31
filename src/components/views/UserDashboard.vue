@@ -1,125 +1,80 @@
 <template>
   <div class="dashboard-container">
     <div class="sidebar">
-      <h2>Menu</h2>
+      <h2>ABSENSI</h2>
       <ul>
-        <li @click="navigateTo('Home')">
-          <i class="fas fa-home"></i> Home
+        <li @click="navigateTo('Dashboard')">
+          <i class="fas fa-tachometer-alt"></i> Dashboard
         </li>
-        <li @click="showModal">
+        <li @click="showAbsenModal">
           <i class="fas fa-calendar-check"></i> Absen
-        </li>
-        <li @click="navigateTo('Profile')">
-          <i class="fas fa-user"></i> Profile
-        </li>
-        <li @click="logout">
-          <i class="fas fa-sign-out-alt"></i> Logout
         </li>
       </ul>
     </div>
-    <div class="content-area">
-      <header class="navbar">
-        <input type="text" placeholder="Search..." v-model="searchQuery" class="search-input" />
-        <div class="user-dropdown">
-          <button @click.stop="toggleDropdown" class="user-button">
-            <i class="fas fa-user-circle"></i> {{ username }}
-          </button>
-          <div v-if="dropdownVisible" class="dropdown-menu" @click.stop>
-            <ul>
-              <li @click="navigateTo('Profile')">Profile</li>
-              <li @click="logout">Logout</li>
-            </ul>
-          </div>
-        </div>
-      </header>
 
-      <main class="main-content">
-        <div v-if="currentView === 'history'">
-          <h2>History Absen</h2>
-          <table class="absen-table">
-            <thead>
-              <tr>
-                <th>Nama</th>
-                <th>Nama Kelas</th>
-                <th>Keterangan</th>
-                <th>Alasan</th>
-                <th>Tanggal</th>
-                <th>Timestamp</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="record in filteredAbsenHistory" :key="record.id">
-                <td>{{ record.nama }}</td>
-                <td>{{ record.nama_kelas }}</td>
-                <td>{{ record.keterangan }}</td>
-                <td>{{ record.alasan }}</td>
-                <td>{{ record.date }}</td>
-                <td>{{ record.timestamp }}</td>
-                <td>
-                  <button class="delete-button" @click="deleteAbsen(record.id)">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div v-else>
-          <h2>Tambahkan Absen</h2>
-        </div>
-        <button @click="showModal" class="add-absen-button">Tambah Absen</button>
-      </main>
-    </div>
-
-    <transition name="fade">
-      <div v-if="showSuccessNotification || showErrorNotification">
-        <div v-if="showSuccessNotification" class="success-notification">
-          Absen berhasil!
-        </div>
-        <div v-if="showErrorNotification" class="error-notification">
-          {{ errorMessage }}
+    <div class="main-content">
+      <div class="header">
+        <div class="last-login">Terakhir Login: {{ currentTime }}</div>
+        <div class="profile">
+          <img src="https://via.placeholder.com/50" alt="Profile Picture" class="profile-img" />
+          <span class="profile-name">{{ userName }}</span>
+          <span class="username-display">({{ username }})</span>
         </div>
       </div>
-    </transition>
 
-    <div v-if="modalVisible" class="modal" @click.self="closeModal">
-      <div class="modal-content">
-        <span class="close" @click="closeModal">&times;</span>
-        <h2>Absen Pegawai</h2>
-        <form @submit.prevent="submitAbsen">
-          <div class="form-group">
-            <label>Nama:</label>
-            <input v-model="form.nama" type="text" required />
+      <h1 class="dashboard-title">Dashboard</h1>
+
+      <div class="stats-cards">
+        <div
+          class="card"
+          v-for="(item, index) in dashboardItems"
+          :key="index"
+          :style="{ borderLeft: item.color }"
+        >
+          <div class="card-icon" :style="{ color: item.color.split(' ')[2] }">
+            <i class="fas" :class="index === 0 ? 'fa-calendar-check' : (index === 1 ? 'fa-chalkboard-teacher' : (index === 2 ? 'fa-book' : 'fa-users'))"></i>
+            <span v-if="index === 0 && absenceNotification" class="notif">{{ absenceNotification }}</span>
           </div>
-          <div class="form-group">
-            <label>Username:</label>
-            <input v-model="form.username" type="text" />
-          </div>
-          <div class="form-group">
-            <label>Keterangan:</label>
-            <select v-model="form.keterangan" required>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.subtitle }}</p>
+        </div>
+      </div>
+
+      <button @click="showAbsenModal" class="add-absen-button full-width">Tambah Absen</button>
+
+      <!-- Attendance Modal -->
+      <div v-if="showModal" class="modal-overlay">
+        <div class="modal-content">
+          <h2>Absen Pegawai</h2>
+          <form @submit.prevent="submitAttendance">
+            <label for="nama">Nama:</label>
+            <input v-model="attendanceData.nama" type="text" required />
+
+            <label for="username">Username:</label>
+            <input v-model="attendanceData.username" type="text" required />
+
+            <label for="nama_kelas">Kelas:</label>
+            <input v-model="attendanceData.nama_kelas" type="text" required />
+
+            <label for="keterangan">Keterangan:</label>
+            <select v-model="attendanceData.keterangan" required>
               <option value="hadir">Hadir</option>
               <option value="izin">Izin</option>
               <option value="sakit">Sakit</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label>Alasan:</label>
-            <input v-model="form.alasan" type="text" required />
-          </div>
-          <div class="form-group">
-            <label>Nama Kelas:</label>
-            <input v-model="form.nama_kelas" type="text" required />
-          </div>
-          <div class="form-group">
-            <label>Tanggal:</label>
-            <input v-model="form.date" type="date" required />
-          </div>
-          <button type="submit" class="submit-button">{{ isEditing ? 'Update' : 'Submit' }} Absen</button>
-          <p v-if="message" class="message">{{ message }}</p>
-        </form>
+
+            <label for="alasan">Alasan:</label>
+            <input v-model="attendanceData.alasan" type="text" required />
+
+            <label for="date">Tanggal:</label>
+            <input v-model="attendanceData.date" type="date" required />
+
+            <div class="modal-buttons">
+              <button type="submit" :disabled="loading">{{ loading ? 'Mengirim...' : 'Absen' }}</button>
+              <button type="button" @click="closeModal">Batal</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
@@ -131,137 +86,117 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      absenHistory: [],
-      searchQuery: '',
-      username: '',
-      dropdownVisible: false,
-      currentView: 'history',
-      modalVisible: false,
-      showSuccessNotification: false,
-      showErrorNotification: false,
-      errorMessage: '',
-      isEditing: false,
-      message: '',
-      form: {
+      showModal: false,
+      loading: false,
+      attendanceData: {
         nama: '',
         username: '',
         keterangan: '',
         alasan: '',
         nama_kelas: '',
-        date: ''
-      }
+        date: new Date().toISOString().slice(0, 10),
+      },
+      dashboardItems: [
+        { title: 'JUMLAH ABSEN HARI INI', subtitle: 'Belum Absen', color: '5px solid #e74c3c' },
+        { title: 'KELAS YANG DIAJARKAN', subtitle: '2 (Kelas)', color: '5px solid #f39c12' },
+        { title: 'MATA KULIAH YANG DIAJARKAN', subtitle: '1 (Mata Kuliah)', color: '5px solid #3498db' },
+        { title: 'TOTAL ABSENSI', subtitle: '0', color: '5px solid #2ecc71' },
+      ],
+      userName: '',
+      username: '',
+      currentTime: new Date().toLocaleString(),
+      absenceNotification: '',
+      timeInterval: null,
     };
   },
-  computed: {
-    filteredAbsenHistory() {
-      return this.absenHistory.filter(record => {
-        return record.nama.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-               record.nama_kelas.toLowerCase().includes(this.searchQuery.toLowerCase());
-      });
+  mounted() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      this.userName = user.name;
+      this.username = user.username;
+      this.checkAttendance();
     }
+
+    // Update current time every second
+    this.timeInterval = setInterval(() => {
+      this.currentTime = new Date().toLocaleString();
+    }, 1000);
+
+    // Polling for attendance updates every 5 seconds
+    this.pollAttendanceUpdates();
+  },
+  beforeDestroy() {
+    // Clear the time interval when component is destroyed
+    clearInterval(this.timeInterval);
   },
   methods: {
-    async fetchAbsenHistory() {
-      try {
-        const token = localStorage.getItem('authToken');
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-        const response = await axios.get('http://localhost:8000/api/pegawai/absen/history', config);
-        this.absenHistory = response.data;
-      } catch (error) {
-        console.error('Error fetching absence history:', error);
-      }
+    navigateTo(page) {
+      this.$router.push(`/${page}`);
     },
-    toggleDropdown() {
-      this.dropdownVisible = !this.dropdownVisible;
-    },
-    navigateTo(view) {
-      this.currentView = view;
-    },
-    logout() {
-      localStorage.removeItem('authToken');
-      this.isLoggedIn = false;
-    },
-    showModal() {
-      this.modalVisible = true;
+    showAbsenModal() {
+      this.showModal = true;
+      this.attendanceData.username = this.username; // Set username for attendance
+      this.attendanceData.nama = this.userName; // Set name for attendance
     },
     closeModal() {
-      this.modalVisible = false;
-      this.isEditing = false;
-      this.form = { nama: '', username: '', keterangan: '', alasan: '', nama_kelas: '', date: '' };
+      this.showModal = false;
+      this.attendanceData = { nama: '', username: '', keterangan: '', alasan: '', nama_kelas: '', date: new Date().toISOString().slice(0, 10) };
     },
-    async submitAbsen() {
+    async submitAttendance() {
+      this.loading = true;
       try {
-        const token = localStorage.getItem('authToken');
-        const config = {
+        const response = await axios.post('http://localhost:8000/api/pegawai/absen', this.attendanceData, {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-        
-        if (this.isEditing) {
-          // Update existing record
-          await axios.put(`api/pegawai/absen`, this.form, config);
-        } else {
-          // Create new record
-          await axios.post('/pegawai/absen', this.form, config);
-        }
-
-        this.showSuccessNotification = true;
-        this.fetchAbsenHistory();
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        this.absenceNotification = 'Absen berhasil!';
         this.closeModal();
+        this.checkAttendance();
       } catch (error) {
-        this.showErrorNotification = true;
-        this.errorMessage = 'Failed to submit absence';
+        console.error('Error submitting attendance:', error);
+        alert('Terjadi kesalahan saat mengirim absensi. Silakan coba lagi.');
+      } finally {
+        this.loading = false;
       }
     },
-    async deleteAbsen(id) {
-      try {
-        const token = localStorage.getItem('authToken');
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        };
-        await axios.delete(`http://localhost:8000/api/pegawai/absen/${id}`, config);
-        this.fetchAbsenHistory();
-      } catch (error) {
-        console.error('Error deleting absence:', error);
-      }
-    }
+    async checkAttendance() {
+      // Logic to check attendance status
+      this.absenceNotification = '1'; // Ubah sesuai logika
+    },
+    pollAttendanceUpdates() {
+      setInterval(() => {
+        this.checkAttendance();
+      }, 5000); // Update every 5 seconds
+    },
   },
-  created() {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      this.isLoggedIn = true;
-      this.fetchAbsenHistory();
-    }
-  }
 };
 </script>
 
 <style scoped>
+/* Container for the Dashboard */
 .dashboard-container {
   display: flex;
+  font-family: 'Roboto', sans-serif;
+  color: #34495e;
   height: 100vh;
-  font-family: 'Arial', sans-serif;
+  background-color: #f4f6f8;
 }
 
+/* Sidebar */
 .sidebar {
   width: 250px;
-  background-color: #2c3e50;
+  background: linear-gradient(180deg, #2c3e50, #34495e);
   color: #ecf0f1;
   padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
-  transition: width 0.3s;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar h2 {
-  font-size: 24px;
-  margin-bottom: 20px;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  text-align: center;
 }
 
 .sidebar ul {
@@ -272,107 +207,110 @@ export default {
 .sidebar li {
   padding: 15px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
   transition: background-color 0.3s, transform 0.2s;
+  border-radius: 5px;
+}
+
+.sidebar li i {
+  margin-right: 15px;
+  color: #1abc9c;
 }
 
 .sidebar li:hover {
-  background-color: #34495e;
-  transform: scale(1.05);
+  background-color: rgba(26, 188, 156, 0.2);
+  transform: scale(1.02);
 }
 
-.content-area {
+/* Main Content */
+.main-content {
   flex: 1;
   padding: 20px;
-  background-color: #ecf0f1;
-  position: relative;
+  background-color: #ffffff;
+  overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
-.navbar {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-.search-input {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #bdc3c7;
-  width: 200px;
-}
-
-.user-dropdown {
-  position: relative;
-}
-
-.user-button {
-  background: none;
-  border: none;
-  color: #2c3e50;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-.dropdown-menu {
-  position: absolute;
-  right: 0;
-  background-color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  border-radius: 5px;
-  overflow: hidden;
-  z-index: 1000;
-}
-
-.dropdown-menu ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.dropdown-menu li {
-  padding: 10px 15px;
-  cursor: pointer;
-}
-
-.dropdown-menu li:hover {
-  background-color: #f2f2f2;
-}
-
-.main-content {
+  padding: 15px 20px;
   background-color: #ffffff;
+  border-bottom: 1px solid #e0e4e7;
+}
+
+/* Styles for Last Login and Current Time */
+.last-login {
+  color: #3498db; /* Change color for Last Login */
+  font-weight: 500;
+}
+
+.current-time {
+  color: #e74c3c; /* Change color for Current Time */
+  font-weight: 500;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+}
+
+.profile-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.profile-name {
+  font-weight: 700;
+}
+
+.username-display {
+  font-weight: 400;
+  color: #7f8c8d;
+}
+
+/* Stats Cards */
+.stats-cards {
+  display: flex; /* Change to flex for horizontal layout */
+  justify-content: space-between; /* Space between cards */
+  margin: 20px 0;
+  flex-wrap: wrap; /* Allow wrapping if screen is small */
+}
+
+.card {
+  background-color: #fff;
   padding: 20px;
-  border-radius: 5px;
+  border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  width: calc(25% - 15px); /* Each card takes 25% of the width minus some margin */
+  margin-bottom: 20px; /* Space between rows */
 }
 
-.absen-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.absen-table th,
-.absen-table td {
-  padding: 10px;
-  border: 1px solid #bdc3c7;
-  text-align: left;
-}
-
+/* Button Styles */
 .add-absen-button {
-  padding: 10px 15px;
-  background-color: #3498db;
+  background-color: #2ecc71;
   color: white;
+  padding: 10px 20px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-top: 20px;
+  font-size: 16px;
+  transition: background-color 0.3s;
 }
 
 .add-absen-button:hover {
-  background-color: #2980b9;
+  background-color: #27ae60;
 }
 
-.modal {
+/* Modal Styles */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -382,81 +320,33 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 1000;
 }
 
 .modal-content {
   background-color: white;
-  padding: 20px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  padding: 30px;
+  border-radius: 8px;
   width: 400px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.close {
-  cursor: pointer;
-  float: right;
-  font-size: 20px;
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
 }
 
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #bdc3c7;
-  border-radius: 5px;
-}
-
-.submit-button {
+.modal-buttons button {
   padding: 10px 15px;
-  background-color: #2ecc71;
-  color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-.submit-button:hover {
-  background-color: #27ae60;
-}
-
-.message {
-  margin-top: 10px;
-  color: #e74c3c;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
-}
-
-.fade-enter,
-.fade-leave-to /* .fade-leave-active in <2.1.8 */ {
-  opacity: 0;
-}
-
-.success-notification {
+.modal-buttons button:hover {
   background-color: #2ecc71;
   color: white;
-  padding: 10px;
-  margin: 10px;
-  border-radius: 5px;
-}
-
-.error-notification {
-  background-color: #e74c3c;
-  color: white;
-  padding: 10px;
-  margin: 10px;
-  border-radius: 5px;
 }
 </style>
