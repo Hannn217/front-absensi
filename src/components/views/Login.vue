@@ -66,7 +66,9 @@ export default {
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('token', token);
 
-        // Redireksi sesuai dengan jabatan
+        alert("Login berhasil!");
+
+        // Redect lama sesuai jabatan
         switch (userData.jabatan) {
           case 'Super Admin':
             this.$router.push('/home/super-admin');
