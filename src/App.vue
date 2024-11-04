@@ -1,5 +1,5 @@
 <script setup>
-import SidebarAdmin from './components/SidebarAdmin.vue';
+import SidebarAdmin from './components/views/SidebarAdmin.vue';
 
 </script>
 
