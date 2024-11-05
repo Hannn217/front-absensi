@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import SidebarAdmin from '../SidebarAdmin.vue';
+import SidebarAdmin from '../views/SidebarAdmin.vue';
 
 const router = useRouter();
 const username = ref(''); // Nama user yang diambil dari localStorage
