@@ -1,76 +1,16 @@
-<script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { useRouter } from 'vue-router';
-import SidebarAdmin from '../views/SidebarAdmin.vue';
-
-const router = useRouter();
-const username = ref(''); // Nama user yang diambil dari localStorage
-const dropdownVisible = ref(false); // Kontrol visibility dropdown
-
-// Ambil data user saat komponen dibuat
-onMounted(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-        const userObject = JSON.parse(storedUser);
-        username.value = userObject.username || 'Guest';
-    } else {
-        router.push({ name: 'Login' }); // Redirect ke login jika tidak ada user
-    }
-
-    document.addEventListener('click', handleOutsideClick);
-});
-
-onBeforeUnmount(() => {
-    document.removeEventListener('click', handleOutsideClick);
-});
-
-// Fungsi untuk toggle dropdown
-function toggleDropdown() {
-    dropdownVisible.value = !dropdownVisible.value;
-    console.log("Dropdown toggled. Visible:", dropdownVisible.value);
-    if (!dropdownVisible.value) {
-        console.warn("Dropdown should have opened, but it's closed. Check CSS or event bindings.");
-    }
-}
-
-// Fungsi untuk logout
-function logout() {
-    localStorage.removeItem('user');
-    router.push({ name: 'Login' });
-}
-
-// Fungsi untuk navigasi ke profil
-function navigateToProfile() {
-    router.push({ name: 'Profile', params: { username: username.value } });
-}
-
-// Fungsi untuk menutup dropdown saat klik di luar elemen dropdown
-function handleOutsideClick(event) {
-    const dropdown = document.querySelector('.user-dropdown');
-    if (dropdown && !dropdown.contains(event.target)) {
-        if (dropdownVisible.value) {
-            console.log("Clicked outside of dropdown. Closing dropdown.");
-            dropdownVisible.value = false;
-        } else {
-            console.warn("Dropdown is already closed.");
-        }
-    }
-}
-</script>
-
 <template>
     <div class="dashboard-container">
-        <div class="content-area">
-            <SidebarAdmin />
+        <!-- Sidebar -->
+        <SidebarAdmin />
 
+        <!-- Content -->
+        <div class="content-area">
             <header class="navbar">
                 <input type="text" placeholder="Search..." class="search-input" />
-
                 <div class="user-dropdown">
                     <button class="user-button" @click.stop="toggleDropdown">
                         <i class="fas fa-user-circle"></i> {{ username }}
                     </button>
-                    <!-- Dropdown menu -->
                     <div v-if="dropdownVisible" class="dropdown-menu">
                         <ul>
                             <li @click="navigateToProfile">Profile</li>
@@ -80,25 +20,83 @@ function handleOutsideClick(event) {
                 </div>
             </header>
 
+            <!-- Main content for child routes -->
             <main class="main-content">
-                <router-view />
+                <router-view></router-view>
             </main>
         </div>
     </div>
 </template>
 
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useRouter } from 'vue-router';
+import SidebarAdmin from '../views/SidebarAdmin.vue';
+
+const router = useRouter();
+
+const username = ref('');
+const dropdownVisible = ref(false);
+
+onMounted(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+        const userObject = JSON.parse(storedUser);
+        username.value = userObject.username || 'Guest';
+    } else {
+        router.push({ name: 'Login' });
+    }
+
+    document.addEventListener('click', handleOutsideClick);
+});
+
+onBeforeUnmount(() => {
+    document.removeEventListener('click', handleOutsideClick);
+});
+
+function toggleDropdown() {
+    dropdownVisible.value = !dropdownVisible.value;
+}
+
+function logout() {
+    localStorage.removeItem('user');
+    router.push({ name: 'Login' });
+}
+
+function navigateToProfile() {
+    router.push({ name: 'SuperProfile' });
+}
+
+function handleOutsideClick(event) {
+    const dropdown = document.querySelector('.user-dropdown');
+    if (dropdown && !dropdown.contains(event.target)) {
+        dropdownVisible.value = false;
+    }
+}
+</script>
+
 <style scoped>
 .dashboard-container {
     display: flex;
     height: 100vh;
-    background-color: #f0f4f8;
+}
+
+.sidebar {
+    width: 250px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    background-color: #343a40;
+    overflow-y: auto;
 }
 
 .content-area {
     flex: 1;
+    margin-left: 250px;
+    /* This ensures the content starts after the sidebar */
     display: flex;
     flex-direction: column;
-    margin-left: 250px;
 }
 
 .navbar {
@@ -113,6 +111,16 @@ function handleOutsideClick(event) {
     left: 250px;
     width: calc(100% - 250px);
     z-index: 1000;
+}
+
+.main-content {
+    padding: 80px 20px;
+    margin-top: 60px;
+    /* This ensures content starts below the navbar */
+    overflow-y: auto;
+    background-color: #ffffff;
+    height: calc(100vh - 80px);
+    /* Adjusts the main content to fit within the view height */
 }
 
 .search-input {
@@ -150,10 +158,6 @@ function handleOutsideClick(event) {
     border-radius: 5px;
     overflow: hidden;
     z-index: 1500;
-    display: block !important;
-    /* Paksa tampil untuk debugging */
-    border: 2px solid red;
-    /* Beri border untuk melihat posisinya */
 }
 
 .dropdown-menu ul {
@@ -170,12 +174,5 @@ function handleOutsideClick(event) {
 
 .dropdown-menu li:hover {
     background-color: #f0f0f0;
-}
-
-.main-content {
-    flex: 1;
-    padding: 80px 20px;
-    background-color: #ffffff;
-    margin-top: 60px;
 }
 </style>
