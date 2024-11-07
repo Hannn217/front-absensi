@@ -1,4 +1,4 @@
-Register.vue
+
 <template>
   <div class="container-outer">
     <div class="register-container">

@@ -25,7 +25,6 @@
         </div>
       </div>
 
-      <h1 class="dashboard-title">Dashboard</h1>
 
       <div class="stats-cards">
         <div
@@ -45,12 +44,10 @@
       </div>
 
       <button @click="showAbsenModal" class="add-absen-button full-width">
-        <i class="fas fa-plus-circle"></i> Tambah Absen
+        <i class="fas fa-plus-circle"></i>
       </button>
 
-      <button @click="showLeaveModal" class="add-absen-button full-width">
-        <i class="fas fa-plane"></i> Pengajuan Cuti
-      </button>
+  
 
       <div v-if="showModal" class="modal-overlay">
         <div class="modal-content">
@@ -124,6 +121,7 @@ export default {
       attendanceData: this.initializeAttendanceData(),
       leaveData: this.initializeLeaveData(),
       dashboardItems: [
+      //kek box e dash e 
         { title: 'JUMLAH ABSEN HARI INI', subtitle: 'Belum Absen', color: '5px solid #e74c3c' },
         { title: 'MAPS BMP', subtitle: 'CLICK DISINI', color: '5px solid #f39c12' },
         { title: 'PROFILE ANDA', subtitle: 'CLICK UNTUK MELIHAT PROFILE ANDA', color: '5px solid #3498db' },
@@ -313,7 +311,6 @@ export default {
   padding: 20px;
   background-color: #ffffff;
   overflow-y: auto;
-  border-radius: 8px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
@@ -322,7 +319,9 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  background-color: #ffffff;
+  margin-left: -20px;
+  margin-top: -20px;
+  background: linear-gradient(180deg, #2c3e50, #34495e);
   border-bottom: 1px solid #ddd;
 }
 
@@ -376,26 +375,27 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 15px;
+  width: 60px; /* Lebar tombol */
+  height: 60px; /* Tinggi tombol */
   border: none;
-  border-radius: 4px;
-  background-color: #3498db; /* Primary color */
+  border-radius: 50%; /* Membuat tombol berbentuk lingkaran */
+  background-color: #3498db; /* Warna latar belakang */
   color: white;
-  font-size: 16px;
+  font-size: 24px; /* Ukuran ikon */
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s, transform 0.2s;
-  margin: 20px 0; /* Margin for spacing */
+  margin: 20px auto; /* Mengatur margin atas dan bawah */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* Menjaga tombol tetap di atas konten lainnya */
 }
 
 .add-absen-button:hover {
-  background-color: #2980b9; /* Darker shade on hover */
-  transform: scale(1.05);
+  background-color: #2980b9; /* Ganti warna saat hover */
+  transform: scale(1.1); /* Efek sedikit membesar saat hover */
 }
 
-.add-absen-button i {
-  margin-right: 5px; /* Space between icon and text */
-}
+
 
 /* Modal Styles */
 .modal-overlay {
