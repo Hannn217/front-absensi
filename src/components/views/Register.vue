@@ -1,4 +1,13 @@
 
+Untuk memastikan data yang didaftarkan saat registrasi digunakan saat login dan tidak terlanjur terikat dengan data pengguna lama (jika ada), Anda perlu mengatur beberapa hal. Berikut adalah cara untuk menangani hal tersebut:
+
+Menghapus Data Login Sebelumnya: Setelah registrasi berhasil, kita perlu memastikan bahwa data lama (jika ada) dihapus agar tidak terpengaruh.
+Menyimpan Data User yang Baru: Setelah registrasi berhasil, kita dapat menyimpan data pengguna baru di localStorage atau sessionStorage untuk penggunaan setelah login.
+Modifikasi di dalam Kode
+Pada bagian setelah registrasi berhasil, kita bisa menambahkan penghapusan data yang ada sebelumnya dan menyimpan data pengguna baru yang berhasil didaftarkan. Berikut adalah kode yang diperbarui:
+
+vue
+Copy code
 <template>
   <div class="container-outer">
     <div class="register-container">
@@ -99,6 +108,7 @@ export default {
       this.isLoading = true;
 
       try {
+        // Mengirim data registrasi ke API
         const response = await axios.post('http://localhost:8000/api/register', {
           username: this.username,
           nama: this.nama,
@@ -108,6 +118,17 @@ export default {
           jabatan: this.jabatan,
         });
 
+        // Menyimpan data pengguna baru di localStorage
+        const user = {
+          username: this.username,
+          nama: this.nama,
+          email: this.email,
+          nomor_hp: this.nomor_hp,
+          jabatan: this.jabatan,
+        };
+        localStorage.setItem('user', JSON.stringify(user));
+
+        // Mengalihkan ke halaman home pegawai
         alert("Registrasi berhasil!");
         this.$router.push('/home/pegawai');
       } catch (error) {
