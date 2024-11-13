@@ -1,10 +1,19 @@
 <template>
     <div>
         <h1>Kelola Pegawai</h1>
+
+        <!-- Tampilkan pesan error dan sukses -->
         <div v-if="error" class="error">{{ error }}</div>
         <div v-if="success" class="success">{{ success }}</div>
 
-        <div v-if="employees.length">
+        <!-- Pesan loading dan ketika tidak ada pegawai ditemukan -->
+        <div v-if="loading" class="loading-container">
+            <div class="loader"></div>
+        </div>
+        <div v-else-if="!employees.length">Tidak ada pegawai yang ditemukan.</div>
+
+        <!-- Tabel Pegawai -->
+        <div v-if="employees.length && !loading">
             <table class="employee-table">
                 <thead>
                     <tr>
@@ -26,7 +35,7 @@
                         <td>{{ employee.jabatan }}</td>
                         <td>{{ employee.nama_kelas }}</td>
                         <td class="actions">
-                            <!-- Kondisi untuk jabatan "pegawai" -->
+                            <!-- Tindakan untuk pegawai dengan jabatan "Pegawai" -->
                             <template v-if="employee.jabatan === 'Pegawai'">
                                 <button @click="promoteEmployee(employee.username)" title="Promote"
                                     class="action-btn promote">
@@ -41,10 +50,9 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </template>
-                            <!-- Kondisi untuk jabatan "ketua kelas" -->
+                            <!-- Tindakan untuk pegawai dengan jabatan "Ketua Kelas" -->
                             <template v-else-if="employee.jabatan === 'Ketua Kelas'">
-                                <button @click="demoteEmployee(employee.username)" title="Demote"
-                                    class="action-btn demote">
+                                <button @click="confirmDemote(employee)" title="Demote" class="action-btn demote">
                                     <i class="fas fa-arrow-down"></i>
                                 </button>
                                 <button @click="deleteEmployee(employee.username)" title="Delete"
@@ -52,7 +60,7 @@
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </template>
-                            <!-- Kondisi untuk jabatan "system admin" -->
+                            <!-- Tindakan untuk pegawai dengan jabatan "System Admin" -->
                             <template v-else-if="employee.jabatan === 'System Admin'">
                                 <button @click="deleteEmployee(employee.username)" title="Delete"
                                     class="action-btn delete">
@@ -63,9 +71,6 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
-        <div v-else>
-            <p>No employees found.</p>
         </div>
     </div>
 </template>
@@ -79,6 +84,7 @@ export default {
             employees: [],
             error: null,
             success: null,
+            loading: true
         };
     },
     mounted() {
@@ -88,51 +94,27 @@ export default {
         async fetchEmployees() {
             try {
                 const response = await axios.get('http://localhost:8000/api/all/profile', {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
                 });
                 this.employees = response.data.data;
+                this.loading = false;
             } catch (error) {
+                this.loading = false;
                 this.handleError(error);
             }
         },
-        async promoteEmployee(username) {
-            try {
-                const response = await axios.post(`http://localhost:8000/api/pegawai/${username}/promote`, {}, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                });
-                this.success = response.data.message;
-                this.fetchEmployees();
-            } catch (error) {
-                this.handleError(error);
+        confirmDemote(employee) {
+            // Menampilkan dialog konfirmasi
+            const confirmed = confirm(`Apakah Anda yakin ingin mengubah jabatan ${employee.nama} dari Ketua Kelas menjadi Pegawai Biasa?`);
+            if (confirmed) {
+                this.demoteEmployee(employee.username);
             }
-        },
-        async updateEmployee(username) {
-            // Implementasikan aksi update pegawai di sini
-            alert(`Update action for ${username} clicked`);
         },
         async demoteEmployee(username) {
             try {
                 const response = await axios.post(`http://localhost:8000/api/pegawai/${username}/demote`, {}, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                });
-                this.success = response.data.message;
-                this.fetchEmployees();
-            } catch (error) {
-                this.handleError(error);
-            }
-        },
-        async deleteEmployee(username) {
-            try {
-                const response = await axios.delete(`http://localhost:8000/api/pegawai/${username}/del`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    withCredentials: true
                 });
                 this.success = response.data.message;
                 this.fetchEmployees();
@@ -142,14 +124,34 @@ export default {
         },
         handleError(error) {
             if (error.response) {
-                this.error = error.response.data.message || 'An error occurred';
+                this.error = error.response.data.message || 'Terjadi kesalahan';
             } else if (error.request) {
-                this.error = 'No response received from the server';
+                this.error = 'Tidak ada respons dari server';
             } else {
                 this.error = error.message;
             }
         },
-    },
+        async promoteEmployee(username) {
+            try {
+                const response = await axios.post(`http://localhost:8000/api/pegawai/${username}/promote`, {}, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    withCredentials: true
+                });
+                this.success = response.data.message;
+                this.fetchEmployees();
+            } catch (error) {
+                this.handleError(error);
+            }
+        },
+        updateEmployee(username) {
+            // Logika untuk memperbarui data pegawai
+            alert(`Update action for ${username} clicked`);
+        },
+        deleteEmployee(username) {
+            // Logika untuk menghapus pegawai
+            alert(`Delete action for ${username} clicked`);
+        },
+    }
 };
 </script>
 
@@ -215,5 +217,32 @@ export default {
 
 .action-btn i {
     font-size: 1.2em;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60vh;
+}
+
+.loader {
+    width: 50px;
+    padding: 8px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #25b09b;
+    --_m: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
+    -webkit-mask: var(--_m);
+    mask: var(--_m);
+    -webkit-mask-composite: source-out;
+    mask-composite: subtract;
+    animation: l3 1s infinite linear;
+}
+
+@keyframes l3 {
+    to {
+        transform: rotate(1turn);
+    }
 }
 </style>
