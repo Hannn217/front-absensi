@@ -6,9 +6,6 @@
         <li @click="navigateTo('Dashboard')">
           <i class="fas fa-tachometer-alt"></i> Dashboard
         </li>
-        <li @click="showAbsenModal">
-          <i class="fas fa-calendar-check"></i> Absen
-        </li>
         <li @click="openLeaveModal">
           <i class="fas fa-plane"></i> Pengajuan Cuti
         </li>
@@ -25,6 +22,7 @@
         </div>
       </div>
 
+      <!-- Stats Cards -->
       <div class="stats-cards">
         <div
           class="card"
@@ -35,104 +33,47 @@
         >
           <div class="card-icon" :style="{ color: item.color.split(' ')[2] }">
             <i class="fas" :class="getCardIcon(index)"></i>
-            <span v-if="index === 0 && absenceNotification" class="notif">{{ absenceNotification }}</span>
           </div>
           <h3>{{ item.title }}</h3>
           <p>{{ item.subtitle }}</p>
         </div>
       </div>
 
-      <button @click="showAbsenModal" class="add-absen-button full-width">
+      <button @click="openLeaveModal" class="add-absen-button full-width">
         <i class="fas fa-plus-circle"></i>
       </button>
 
-      <!-- Attendance Modal -->
-      <div v-if="showModal" class="modal-overlay">
-        <div class="modal-content">
-          <h2>Absen <button class="close-modal" @click="closeModal">&times;</button></h2>
-          <form @submit.prevent="submitAttendance">
-            <label for="nama">Nama:</label>
-            <input v-model="attendanceData.nama" type="text" required />
-
-            <label for="username">Username:</label>
-            <input v-model="attendanceData.username" type="text" required />
-
-            <label for="nama_kelas">Kelas:</label>
-            <input v-model="attendanceData.nama_kelas" type="text" required />
-
-            <label for="keterangan">Keterangan:</label>
-            <select v-model="attendanceData.keterangan" required>
-              <option value="hadir">Hadir</option>
-              <option value="izin">Izin</option>
-              <option value="sakit">Sakit</option>
-            </select>
-
-            <label for="alasan">Alasan:</label>
-            <input v-model="attendanceData.alasan" type="text" required />
-
-            <label for="date">Tanggal:</label>
-            <input v-model="attendanceData.date" type="date" required />
-
-            <div class="modal-buttons">
-              <button type="submit" :disabled="loading">{{ loading ? 'Mengirim...' : 'Absen' }}</button>
-              <button type="button" @click="closeModal">Batal</button>
-            </div>
-          </form>
-          <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-        </div>
-      </div>
-
       <!-- Leave Modal -->
       <div v-if="showLeaveModal" class="modal-overlay">
-  <div class="modal-content">
-    <h2>Pengajuan Cuti <button class="close-modal" @click="closeLeaveModal">&times;</button></h2>
-    <form @submit.prevent="submitLeave">
-      <label for="leaveReason">Nama :</label>
-      <input v-model="leaveData.nama" type="text" required />
+        <div class="modal-content">
+          <h2>Pengajuan Cuti <button class="close-modal" @click="closeLeaveModal">&times;</button></h2>
+          <form @submit.prevent="submitLeave">
+            <label for="jenis_cuti">Jenis Cuti:</label>
+            <select v-model="leaveData.jenis_cuti" required>
+              <option value="Cuti Bulanan">Cuti Bulanan</option>
+              <option value="Cuti Mingguan">Cuti Mingguan</option>
+            </select>
 
-      <label for="username">Username:</label>
-      <input v-model="leaveData.username" type="text" required />
+            <label for="tanggal_mulai">Tanggal Mulai:</label>
+            <input v-model="leaveData.tanggal_mulai" type="date" required />
 
-      <label for="nama_kelas">Nama Kelas:</label>
-      <input v-model="leaveData.nama_kelas" type="text" required />
+            <label for="tanggal_selesai">Tanggal Selesai:</label>
+            <input v-model="leaveData.tanggal_selesai" type="date" required />
 
-      <label for="tanggal_mulai">Tanggal Mulai:</label>
-      <input v-model="leaveData.tanggal_mulai" type="date" required />
+            <label for="keterangan">Alasan:</label>
+            <input v-model="leaveData.keterangan" type="text" required />
 
-      <label for="tanggal_selesai">Tanggal Selesai:</label>
-      <input v-model="leaveData.tanggal_selesai" type="date" required />
+            <label for="alamat">Alamat Cuti:</label>
+            <input v-model="leaveData.alamat" type="text" required />
 
-      <label for="keterangan">Alasan:</label>
-      <input v-model="leaveData.keterangan" type="text" required />
-
-      <div class="modal-buttons">
-        <button type="submit" :disabled="loadingLeave">{{ loadingLeave ? 'Mengirim...' : 'Ajukan Cuti' }}</button>
-        <button type="button" @click="closeLeaveModal">Batal</button>
-      </div>
-    </form>
-    <p v-if="leaveErrorMessage" class="error-message">{{ leaveErrorMessage }}</p>
-  </div>
-</div>
-
-
-      <!-- Profile Modal -->
-      <div v-if="showProfileModal" class="modal-overlay">
-        <div class="modal-content profile-modal">
-          <h2>Profil Pengguna<button class="close-modal" @click="closeProfileModal">&times;</button></h2>
-          <div class="profile-header">
-            <i class="fas fa-user-circle profile-icon-large"></i>
-            <div class="profile-details">
-              <h3>{{ userData.nama }}</h3>
-              <p>{{ userData.jabatan }}</p>
+            <div class="modal-buttons">
+              <button type="submit" :disabled="loadingLeave">
+                {{ loadingLeave ? 'Mengirim...' : 'Ajukan Cuti' }}
+              </button>
+              <button type="button" @click="closeLeaveModal">Batal</button>
             </div>
-          </div>
-          <ul class="profile-info">
-            <li><strong>Nama:</strong> {{ userData.nama }}</li>
-            <li><strong>Username:</strong> {{ userData.username }}</li>
-            <li><strong>Email:</strong> {{ userData.email }}</li>
-            <li><strong>Nomor HP:</strong> {{ userData.nomor_hp }}</li>
-            <li><strong>Jabatan:</strong> {{ userData.jabatan }}</li>
-          </ul>
+          </form>
+          <p v-if="leaveErrorMessage" class="error-message">{{ leaveErrorMessage }}</p>
         </div>
       </div>
     </div>
@@ -140,58 +81,48 @@
 </template>
 
 <script>
-import axios from 'axios';
+import axios from "axios";
+
+axios.defaults.baseURL = "http://localhost:8000/api"; // Sesuaikan dengan server
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export default {
   data() {
     return {
-      showModal: false,
       showLeaveModal: false,
-      showProfileModal: false,
-      loading: false,
       loadingLeave: false,
-      errorMessage: '',
-      leaveErrorMessage: '',
-      attendanceData: this.initializeAttendanceData(),
+      leaveErrorMessage: "",
       leaveData: this.initializeLeaveData(),
       dashboardItems: [
-        { title: 'JUMLAH ABSEN HARI INI', subtitle: 'Belum Absen, Silahkan Absen Untuk Hari Ini!', color: '5px solid #e74c3c' },
-        { title: 'MAPS BMP', subtitle: 'CLICK DISINI', color: '5px solid #f39c12' },
-        { title: 'PROFILE ANDA', subtitle: 'CLICK UNTUK MELIHAT PROFILE ANDA', color: '5px solid #3498db' },
-        { title: 'HISTORY ABSENSI', subtitle: 'DEFAULT', color: '5px solid #2ecc71' },
+        { title: "Total Pengajuan Cuti", subtitle: "0 Pengajuan", color: "5px solid #e74c3c" },
+        { title: "Cuti Diterima", subtitle: "0 Diterima", color: "5px solid #f39c12" },
+        { title: "Cuti Progres", subtitle: "0 Dalam Progres", color: "5px solid #3498db" },
+        { title: "Cuti Ditolak", subtitle: "0 Ditolak", color: "5px solid #2ecc71" },
       ],
-      userData: {
-        nama: '',
-        username: '',
-        email: '',
-        nomor_hp: '',
-        jabatan: '',
-      },
-      userName: '',
-      username: '',
+      totalPengajuan: 0, // Menyimpan total asli dari server
+      userName: "",
+      username: "",
       currentTime: new Date().toLocaleString(),
-      absenceNotification: '',
       timeInterval: null,
     };
   },
   mounted() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem("user"));
     if (user) {
       this.userName = user.name;
       this.username = user.username;
-      this.userData = {
-        nama: user.nama,
-        username: user.username,
-        email: user.email,
-        nomor_hp: user.nomor_hp,
-        jabatan: user.jabatan,
-      };
     }
     this.timeInterval = setInterval(() => {
       this.currentTime = new Date().toLocaleString();
     }, 1000);
-    this.checkAttendance();
-    this.pollAttendanceUpdates();
+
+    this.initializeDashboardData();
   },
   beforeDestroy() {
     clearInterval(this.timeInterval);
@@ -200,243 +131,273 @@ export default {
     navigateTo(page) {
       this.$router.push(`/${page}`);
     },
-    showAbsenModal() {
-      this.showModal = true;
-      this.attendanceData.username = this.username;
-      this.attendanceData.nama = this.userName;
-    },
-    closeModal() {
-      this.showModal = false;
-      this.errorMessage = '';
-      this.resetAttendanceData();
-    },
     openLeaveModal() {
       this.showLeaveModal = true;
       this.leaveData = this.initializeLeaveData();
     },
     closeLeaveModal() {
       this.showLeaveModal = false;
-      this.leaveErrorMessage = '';
+      this.leaveErrorMessage = "";
       this.resetLeaveData();
-    },
-    openProfileModal() {
-      this.showProfileModal = true;
-    },
-    closeProfileModal() {
-      this.showProfileModal = false;
-    },
-    async submitAttendance() {
-      this.loading = true;
-      try {
-        const response = await axios.post(`http://localhost:8000/api/pegawai/absen/${this.username}`, this.attendanceData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        
-        localStorage.setItem(`attendanceStatus_${this.username}`, 'present');
-        this.absenceNotification = '0';
-        this.dashboardItems[0].subtitle = 'Berhasil Absen';
-        this.closeModal();
-
-        setTimeout(() => {
-          this.dashboardItems[0].subtitle = 'Belum Absen, Silahkan Absen Untuk Hari Ini!';
-        }, 60000);  // Reset message after 1 minute
-      } catch (error) {
-        this.errorMessage = 'Gagal Absen! Pastikan Anda mengisi data dengan benar.';
-      } finally {
-        this.loading = false;
-      }
-    },
-    async submitLeave() {
-      this.loadingLeave = true;
-      try {
-        const response = await axios.post(`http://localhost:8000/api/pengajuan`, this.leaveData, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        this.closeLeaveModal();
-        alert('Cuti berhasil diajukan');
-      } catch (error) {
-        this.leaveErrorMessage = 'Gagal mengajukan cuti, coba lagi nanti.';
-      } finally {
-        this.loadingLeave = false;
-      }
-    },
-    initializeAttendanceData() {
-      return {
-        leaveData: {
-      nama: '',
-      username: '',
-      nama_kelas: '',
-      tanggal_mulai: '',
-      tanggal_selesai: '',
-      keterangan: ''
-    },
-    showLeaveModal: false,
-    leaveErrorMessage: '',
-    loadingLeave: false
-  };
     },
     initializeLeaveData() {
       return {
-        reason: '',
-        date: new Date().toISOString().split('T')[0],
+        jenis_cuti: "",
+        alamat: "",
+        tanggal_mulai: "",
+        tanggal_selesai: "",
+        keterangan: "",
       };
-    },
-    resetAttendanceData() {
-      this.attendanceData = this.initializeAttendanceData();
     },
     resetLeaveData() {
       this.leaveData = this.initializeLeaveData();
     },
-    async checkAttendance() {
-      // Simulating a call to check attendance status from an API
-      const status = localStorage.getItem(`attendanceStatus_${this.username}`);
-      if (status === 'present') {
-        this.absenceNotification = '0';
-        this.dashboardItems[0].subtitle = 'Sudah Absen Hari Ini';
-      } else {
-        this.absenceNotification = '1';
-        this.dashboardItems[0].subtitle = 'Belum Absen, Silahkan Absen Untuk Hari Ini!';
+    async submitLeave() {
+      this.loadingLeave = true;
+      try {
+        const response = await axios.post("/pengajuan", this.leaveData);
+        alert("Pengajuan cuti berhasil!");
+        this.closeLeaveModal();
+
+        // Tambahkan pengajuan baru
+        this.totalPengajuan++;
+        this.updateDashboard();
+        this.saveToLocalStorage();
+
+        // Refresh data dari server
+        this.fetchLeaveData();
+      } catch (error) {
+        if (error.response && error.response.status === 422) {
+          this.leaveErrorMessage = "Terjadi kesalahan pada data yang Anda masukkan.";
+        } else if (error.response && error.response.status === 401) {
+          this.leaveErrorMessage = "Anda tidak memiliki akses. Silakan login kembali.";
+          localStorage.removeItem("token");
+          this.$router.push("/");
+        } else {
+          this.leaveErrorMessage = "Terjadi kesalahan. Silakan coba lagi.";
+        }
+      } finally {
+        this.loadingLeave = false;
       }
     },
-    pollAttendanceUpdates() {
-      setInterval(() => {
-        this.checkAttendance();
-      }, 30000);  // Poll every 30 seconds
+    async fetchLeaveData() {
+      try {
+        const response = await axios.get("/pengajuan/leave-status");
+        const leaveStatusData = response.data;
+
+        // Perbarui data dashboard
+        this.totalPengajuan = leaveStatusData.total;
+        this.dashboardItems[1].subtitle = `${leaveStatusData.accepted} Diterima`;
+        this.dashboardItems[2].subtitle = `${leaveStatusData.inProgress} Dalam Progres`;
+        this.dashboardItems[3].subtitle = `${leaveStatusData.rejected} Ditolak`;
+
+        this.updateDashboard();
+        this.saveToLocalStorage();
+      } catch (error) {
+        console.error("Failed to fetch leave data:", error);
+      }
     },
+    initializeDashboardData() {
+      // Coba muat data dari localStorage
+      const storedData = localStorage.getItem("dashboardData");
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        this.totalPengajuan = parsedData.totalPengajuan;
+        this.dashboardItems = parsedData.dashboardItems;
+      } else {
+        this.fetchLeaveData(); // Jika tidak ada data, ambil dari server
+      }
+    },
+    updateDashboard() {
+      this.dashboardItems[0].subtitle = `${this.totalPengajuan} Pengajuan`;
+    },
+    saveToLocalStorage() {
+      const dashboardData = {
+        totalPengajuan: this.totalPengajuan,
+        dashboardItems: this.dashboardItems,
+      };
+      localStorage.setItem("dashboardData", JSON.stringify(dashboardData));
+    },
+    async acceptLeave(id) {
+      try {
+        await axios.post(`/pengajuan/${id}/accept`);
+        this.totalPengajuan--;
+        this.updateDashboard();
+        this.saveToLocalStorage();
+        alert("Pengajuan berhasil diterima!");
+      } catch (error) {
+        console.error("Gagal menerima pengajuan:", error);
+      }
+    },
+    // Fungsi untuk mendapatkan ikon berdasarkan index
     getCardIcon(index) {
-      const icons = ['fa-check-circle', 'fa-map-marker-alt', 'fa-user-circle', 'fa-history'];
-      return icons[index] || '';
-    }
+      switch (index) {
+        case 0:
+          return "fa-calendar-check"; // Ikon untuk total pengajuan
+        case 1:
+          return "fa-check-circle"; // Ikon untuk cuti diterima
+        case 2:
+          return "fa-pause-circle"; // Ikon untuk cuti dalam progres
+        case 3:
+          return "fa-times-circle"; // Ikon untuk cuti ditolak
+        default:
+          return ""; // Default jika tidak ada ikon yang sesuai
+      }
+    },
   },
 };
+
 </script>
+
+
 
 <style scoped>
 /* Add your styles here */
+/* Modal Overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
+  animation: fadeIn 0.3s ease-in-out;
+  z-index: 1000;
 }
 
+/* Modal Content */
 .modal-content {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
+  background: linear-gradient(135deg, #3498db, #2ecc71);
+  padding: 25px;
+  border-radius: 12px;
+  width: 450px;
+  color: #fff;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.4s ease-in-out;
 }
 
+.modal-content h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 24px;
+  color: #000000;
+}
+
+/* Close Button */
 .close-modal {
-  background: transparent;
+  background: #e74c3c;
+  color: #000000;
   border: none;
-  font-size: 20px;
-  color: red;
+  font-size: 18px;
+  padding: 5px 10px;
+  border-radius: 5px;
   cursor: pointer;
+  float: right;
+  transition: background 0.3s;
+}
+
+.close-modal:hover {
+  background: #c0392b;
+}
+
+/* Input Fields */
+.modal-content label {
+  display: block;
+  margin-top: 15px;
+  font-size: 14px;
+  color: #000000;
+}
+
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background-color: #ecf0f1;
+  color: #34495e;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.modal-content input:focus,
+.modal-content select:focus {
+  transform: scale(1.02);
+  box-shadow: 0px 0px 5px rgba(52, 152, 219, 0.8);
+}
+
+/* Buttons */
+.modal-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .modal-buttons button {
-  margin-top: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
+  padding: 12px 20px;
   border: none;
-  background-color: #3498db;
-  color: white;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
   cursor: pointer;
+  transition: transform 0.3s, background 0.3s;
+}
+
+.modal-buttons button[type="submit"] {
+  background: #2ecc71;
+  color: #fff;
+}
+
+.modal-buttons button[type="submit"]:hover {
+  background: #27ae60;
+  transform: scale(1.05);
 }
 
 .modal-buttons button[type="button"] {
-  background-color: #e74c3c;
+  background: #e74c3c;
+  color: #fff;
 }
 
+.modal-buttons button[type="button"]:hover {
+  background: #c0392b;
+  transform: scale(1.05);
+}
+
+/* Error Message */
 .error-message {
-  color: red;
+  color: #e74c3c;
   font-size: 14px;
   margin-top: 10px;
-}
-
-.add-absen-button {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #2ecc71;
-  color: white;
-  font-size: 24px;
-  padding: 15px 30px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.add-absen-button:hover {
-  background-color: #27ae60;
-}
-
-/* Sidebar styles */
-
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.profile-icon {
-  font-size: 30px;
-  color: #3498db;
-}
-
-/* Card styles */
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.card {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   text-align: center;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.card-icon {
-  font-size: 30px;
-  margin-bottom: 10px;
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
-.modal-content {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
 
 .profile-modal {
   text-align: center;
@@ -611,27 +572,25 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px; /* Lebar tombol */
-  height: 60px; /* Tinggi tombol */
+  width: 60px;
+  height: 60px;
   border: none;
-  border-radius: 50%; /* Membuat tombol berbentuk lingkaran */
-  background-color: #3498db; /* Warna latar belakang */
+  border-radius: 50%;
+  background-color: #3498db;
   color: white;
-  font-size: 24px; /* Ukuran ikon */
+  font-size: 24px;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s, transform 0.2s;
-  margin: 20px auto; /* Mengatur margin atas dan bawah */
+  margin: 20px auto;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000; /* Menjaga tombol tetap di atas konten lainnya */
+  z-index: 1000;
 }
 
 .add-absen-button:hover {
-  background-color: #2980b9; /* Ganti warna saat hover */
-  transform: scale(1.1); /* Efek sedikit membesar saat hover */
+  background-color: #2980b9;
+  transform: scale(1.1);
 }
-
-
 
 /* Modal Styles */
 .modal-overlay {
@@ -659,7 +618,6 @@ export default {
   border: none;
   font-size: 20px;
   cursor: pointer;
-  float: right;
 }
 
 .modal-buttons {
@@ -671,5 +629,46 @@ export default {
 .error-message {
   color: red;
   font-size: 14px;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal-content {
+    width: 90%;
+  }
+}
+
+@media (max-width: 600px) {
+  .sidebar {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: space-around;
+    box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .stats-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .add-absen-button {
+    width: 50px;
+    height: 50px;
+    font-size: 18px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>
