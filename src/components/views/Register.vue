@@ -1,13 +1,4 @@
 
-Untuk memastikan data yang didaftarkan saat registrasi digunakan saat login dan tidak terlanjur terikat dengan data pengguna lama (jika ada), Anda perlu mengatur beberapa hal. Berikut adalah cara untuk menangani hal tersebut:
-
-Menghapus Data Login Sebelumnya: Setelah registrasi berhasil, kita perlu memastikan bahwa data lama (jika ada) dihapus agar tidak terpengaruh.
-Menyimpan Data User yang Baru: Setelah registrasi berhasil, kita dapat menyimpan data pengguna baru di localStorage atau sessionStorage untuk penggunaan setelah login.
-Modifikasi di dalam Kode
-Pada bagian setelah registrasi berhasil, kita bisa menambahkan penghapusan data yang ada sebelumnya dan menyimpan data pengguna baru yang berhasil didaftarkan. Berikut adalah kode yang diperbarui:
-
-vue
-Copy code
 <template>
   <div class="container-outer">
     <div class="register-container">

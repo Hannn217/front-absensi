@@ -29,7 +29,7 @@
           v-for="(item, index) in dashboardItems"
           :key="index"
           :style="{ borderLeft: item.color }"
-          @click="index === 1 ? openGoogleMaps() : index === 2 ? openProfileModal() : null"
+          @click="handleCardClick(index)"
         >
           <div class="card-icon" :style="{ color: item.color.split(' ')[2] }">
             <i class="fas" :class="getCardIcon(index)"></i>
@@ -83,7 +83,7 @@
 <script>
 import axios from "axios";
 
-axios.defaults.baseURL = "http://localhost:8000/api"; // Sesuaikan dengan server
+axios.defaults.baseURL = "http://localhost:8000/api";
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -105,7 +105,7 @@ export default {
         { title: "Cuti Progres", subtitle: "0 Dalam Progres", color: "5px solid #3498db" },
         { title: "Cuti Ditolak", subtitle: "0 Ditolak", color: "5px solid #2ecc71" },
       ],
-      totalPengajuan: 0, // Menyimpan total asli dari server
+      totalPengajuan: 0,
       userName: "",
       username: "",
       currentTime: new Date().toLocaleString(),
@@ -118,6 +118,7 @@ export default {
       this.userName = user.name;
       this.username = user.username;
     }
+
     this.timeInterval = setInterval(() => {
       this.currentTime = new Date().toLocaleString();
     }, 1000);
@@ -159,25 +160,24 @@ export default {
         alert("Pengajuan cuti berhasil!");
         this.closeLeaveModal();
 
-        // Tambahkan pengajuan baru
         this.totalPengajuan++;
+        this.dashboardItems[2].subtitle = `${parseInt(this.dashboardItems[2].subtitle) + 1} Dalam Progres`;
         this.updateDashboard();
         this.saveToLocalStorage();
-
-        // Refresh data dari server
-        this.fetchLeaveData();
       } catch (error) {
-        if (error.response && error.response.status === 422) {
-          this.leaveErrorMessage = "Terjadi kesalahan pada data yang Anda masukkan.";
-        } else if (error.response && error.response.status === 401) {
-          this.leaveErrorMessage = "Anda tidak memiliki akses. Silakan login kembali.";
-          localStorage.removeItem("token");
-          this.$router.push("/");
-        } else {
-          this.leaveErrorMessage = "Terjadi kesalahan. Silakan coba lagi.";
-        }
+        this.handleError(error);
       } finally {
         this.loadingLeave = false;
+      }
+    },
+    initializeDashboardData() {
+      const userDashboardData = localStorage.getItem(`dashboardData-${this.username}`);
+      if (userDashboardData) {
+        const parsedData = JSON.parse(userDashboardData);
+        this.totalPengajuan = parsedData.totalPengajuan;
+        this.dashboardItems = parsedData.dashboardItems;
+      } else {
+        this.fetchLeaveData();
       }
     },
     async fetchLeaveData() {
@@ -185,7 +185,6 @@ export default {
         const response = await axios.get("/pengajuan/leave-status");
         const leaveStatusData = response.data;
 
-        // Perbarui data dashboard
         this.totalPengajuan = leaveStatusData.total;
         this.dashboardItems[1].subtitle = `${leaveStatusData.accepted} Diterima`;
         this.dashboardItems[2].subtitle = `${leaveStatusData.inProgress} Dalam Progres`;
@@ -197,17 +196,6 @@ export default {
         console.error("Failed to fetch leave data:", error);
       }
     },
-    initializeDashboardData() {
-      // Coba muat data dari localStorage
-      const storedData = localStorage.getItem("dashboardData");
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        this.totalPengajuan = parsedData.totalPengajuan;
-        this.dashboardItems = parsedData.dashboardItems;
-      } else {
-        this.fetchLeaveData(); // Jika tidak ada data, ambil dari server
-      }
-    },
     updateDashboard() {
       this.dashboardItems[0].subtitle = `${this.totalPengajuan} Pengajuan`;
     },
@@ -216,37 +204,42 @@ export default {
         totalPengajuan: this.totalPengajuan,
         dashboardItems: this.dashboardItems,
       };
-      localStorage.setItem("dashboardData", JSON.stringify(dashboardData));
+      localStorage.setItem(`dashboardData-${this.username}`, JSON.stringify(dashboardData));
     },
-    async acceptLeave(id) {
-      try {
-        await axios.post(`/pengajuan/${id}/accept`);
-        this.totalPengajuan--;
-        this.updateDashboard();
-        this.saveToLocalStorage();
-        alert("Pengajuan berhasil diterima!");
-      } catch (error) {
-        console.error("Gagal menerima pengajuan:", error);
+    handleCardClick(index) {
+      if (index === 1) {
+        this.openGoogleMaps();
+      } else if (index === 2) {
+        this.openProfileModal();
       }
     },
-    // Fungsi untuk mendapatkan ikon berdasarkan index
+    handleError(error) {
+      if (error.response && error.response.status === 422) {
+        this.leaveErrorMessage = "Terjadi kesalahan pada data yang Anda masukkan.";
+      } else if (error.response && error.response.status === 401) {
+        this.leaveErrorMessage = "Anda tidak memiliki akses. Silakan login kembali.";
+        localStorage.removeItem("token");
+        this.$router.push("/");
+      } else {
+        this.leaveErrorMessage = "Terjadi kesalahan. Silakan coba lagi.";
+      }
+    },
     getCardIcon(index) {
       switch (index) {
         case 0:
-          return "fa-calendar-check"; // Ikon untuk total pengajuan
+          return "fa-calendar-check";
         case 1:
-          return "fa-check-circle"; // Ikon untuk cuti diterima
+          return "fa-check-circle";
         case 2:
-          return "fa-pause-circle"; // Ikon untuk cuti dalam progres
+          return "fa-pause-circle";
         case 3:
-          return "fa-times-circle"; // Ikon untuk cuti ditolak
+          return "fa-times-circle";
         default:
-          return ""; // Default jika tidak ada ikon yang sesuai
+          return "";
       }
     },
   },
 };
-
 </script>
 
 
