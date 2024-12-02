@@ -4,6 +4,7 @@
         <button @click="fetchEmployees" class="refresh-button">Refresh Data</button>
         <div v-if="loading" class="loader"></div>
 
+        <!-- Tabel Pegawai -->
         <table v-if="!loading" class="employee-table">
             <thead>
                 <tr>
@@ -25,7 +26,6 @@
                     <td>{{ employee.jabatan }}</td>
                     <td>{{ employee.nama_kelas }}</td>
                     <td>
-                        <!-- Conditional buttons based on employee role -->
                         <div v-if="employee.jabatan === 'System Admin'">
                             <button @click="editEmployee(employee.username)" class="edit-button">Edit</button>
                             <button @click="deleteEmployee(employee.username)" class="delete-button">Hapus</button>
@@ -45,7 +45,7 @@
             </tbody>
         </table>
 
-        <!-- Promotion Dialog -->
+        <!-- Modal Promosi -->
         <div v-if="showPromotionDialog" class="modal">
             <div class="modal-content">
                 <h3>Pilih Kelas untuk Promosi</h3>
@@ -59,13 +59,14 @@
             </div>
         </div>
 
+        <!-- Pesan Sukses -->
         <div v-if="success" class="success-message">{{ success }}</div>
         <div v-if="error" class="error-message">{{ error }}</div>
     </div>
 </template>
 
 <script>
-import axios from 'axios';
+import axios from "axios";
 
 export default {
     data() {
@@ -73,38 +74,28 @@ export default {
             employees: [],
             classes: [],
             loading: false,
-            success: '',
-            error: '',
+            success: "",
+            error: "",
             showPromotionDialog: false,
             selectedClass: null,
-            selectedEmployee: null
+            selectedEmployee: null,
         };
     },
     methods: {
         async fetchEmployees() {
             this.loading = true;
-            this.success = '';
-            this.error = '';
+            this.success = "";
+            this.error = "";
             try {
-                const response = await axios.get('http://localhost:8000/api/all/profile');
+                const response = await axios.get("http://localhost:8000/api/all/profile");
                 this.employees = response.data.data;
-                await this.fetchClasses(); // Load available classes
             } catch (error) {
                 this.handleError(error);
             } finally {
                 this.loading = false;
             }
         },
-        async fetchClasses() {
-            try {
-                const response = await axios.get('http://localhost:8000/api/listkelas');
-                this.classes = response.data.data;
-            } catch (error) {
-                this.error = 'Gagal memuat daftar kelas';
-            }
-        },
         openPromotionDialog(employee) {
-            // Check if the employee is in a class
             if (employee.nama_kelas === "Belum Ditambahkan ke dalam kelas") {
                 this.selectedEmployee = employee;
                 this.showPromotionDialog = true;
@@ -112,12 +103,12 @@ export default {
                 this.promoteEmployee(employee.username);
             }
         },
-        async promoteEmployee(username) {
+        async promoteEmployee(employee) {
             try {
-                // If a class is selected, include it in the promotion request
-                const response = await axios.post(`http://localhost:8000/api/pegawai/${username}/promote`, {
-                    class_id: this.selectedClass
-                });
+                const response = await axios.post(
+                    `http://localhost:8000/api/pegawai/${employee.username}/promote`,
+                    { class_id: this.selectedClass }
+                );
                 this.success = response.data.message;
                 this.closePromotionDialog();
                 this.fetchEmployees();
@@ -132,7 +123,9 @@ export default {
         },
         async demoteEmployee(username) {
             try {
-                const response = await axios.post(`http://localhost:8000/api/pegawai/${username}/demote`);
+                const response = await axios.post(
+                    `http://localhost:8000/api/pegawai/${username}/demote`
+                );
                 this.success = response.data.message;
                 this.fetchEmployees();
             } catch (error) {
@@ -142,7 +135,9 @@ export default {
         async deleteEmployee(username) {
             if (confirm("Apakah Anda yakin ingin menghapus pegawai ini?")) {
                 try {
-                    const response = await axios.delete(`http://localhost:8000/api/pegawai/${username}`);
+                    const response = await axios.delete(
+                        `http://localhost:8000/api/pegawai/${username}`
+                    );
                     this.success = response.data.message;
                     this.fetchEmployees();
                 } catch (error) {
@@ -154,15 +149,14 @@ export default {
             if (error.response) {
                 this.error = error.response.data.message;
             } else if (error.request) {
-                this.error = 'Tidak ada respon dari server';
+                this.error = "Tidak ada respon dari server";
             } else {
-                this.error = 'Terjadi kesalahan: ' + error.message;
+                this.error = "Terjadi kesalahan: " + error.message;
             }
         },
         editEmployee(username) {
-            // Implement your edit logic here
             alert(`Edit pegawai: ${username}`);
-        }
+        },
     },
     mounted() {
         this.fetchEmployees();
@@ -171,7 +165,23 @@ export default {
 </script>
 
 <style>
-/* Same CSS styles as before + Modal Styles */
+/* Gaya untuk tabel dan modal */
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.employee-table th,
+.employee-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.employee-table th {
+    background-color: #f2f2f2;
+}
+
 .modal {
     display: flex;
     justify-content: center;
@@ -215,5 +225,15 @@ export default {
     border: none;
     cursor: pointer;
     border-radius: 3px;
+}
+
+.success-message {
+    color: green;
+    margin-top: 10px;
+}
+
+.error-message {
+    color: red;
+    margin-top: 10px;
 }
 </style>

@@ -12,15 +12,16 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- Render data kelas jika tersedia -->
+                <!-- Tampilkan pesan jika data kelas kosong -->
                 <tr v-if="kelasData.length === 0">
                     <td colspan="5">Tidak ada data kelas yang tersedia.</td>
                 </tr>
+                <!-- Render data kelas -->
                 <tr v-for="kelas in kelasData" :key="kelas.id">
                     <td>{{ kelas.id }}</td>
-                    <td>{{ kelas.name }}</td>
-                    <!-- Menampilkan daftar anggota dalam bentuk string atau list -->
+                    <td>{{ kelas.nama_kelas }}</td>
                     <td>
+                        <!-- Render daftar anggota sebagai list -->
                         <ul v-if="Array.isArray(kelas.daftar_anggota)">
                             <li v-for="(anggota, index) in kelas.daftar_anggota" :key="index">{{ anggota }}</li>
                         </ul>
@@ -41,32 +42,33 @@ export default {
     name: 'KelolaKelas',
     data() {
         return {
-            kelasData: [], // Menyimpan data kelas yang diterima dari API
+            kelasData: [], // Menyimpan data kelas dari API
         };
     },
     methods: {
-        // Format tanggal agar lebih mudah dibaca
+        // Format tanggal agar mudah dibaca
         formatDate(date) {
             if (!date) return 'N/A';
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
             return new Date(date).toLocaleDateString('id-ID', options);
         },
         // Fetch data kelas dari API
         async fetchData() {
             try {
-                const response = await axios.get('http://localhost:8000/api/kelas');
+                const response = await axios.get('http://localhost:8000/api/listkelas');
                 if (response.data.status === "success") {
-                    this.kelasData = response.data.data; // Menyimpan data kelas
+                    // Simpan data kelas di `kelasData`
+                    this.kelasData = response.data.data;
                 } else {
-                    console.error("Error fetching data:", response.data.message);
+                    console.error("Gagal memuat data kelas:", response.data.message);
                 }
             } catch (error) {
-                console.error("Error fetching data:", error.message);
+                console.error("Terjadi kesalahan saat mengambil data:", error.message);
             }
         }
     },
     mounted() {
-        // Memanggil fetchData saat komponen dimuat
+        // Fetch data saat komponen dimuat
         this.fetchData();
     }
 };
