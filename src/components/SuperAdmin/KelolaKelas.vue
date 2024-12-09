@@ -7,14 +7,13 @@
                     <th>ID</th>
                     <th>Nama Kelas</th>
                     <th>Daftar Anggota</th>
-                    <th>Tanggal Dibuat</th>
-                    <th>Tanggal Diperbarui</th>
+                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Tampilkan pesan jika data kelas kosong -->
                 <tr v-if="kelasData.length === 0">
-                    <td colspan="5">Tidak ada data kelas yang tersedia.</td>
+                    <td colspan="4">{{ errorMessage || "Tidak ada data kelas yang tersedia." }}</td>
                 </tr>
                 <!-- Render data kelas -->
                 <tr v-for="kelas in kelasData" :key="kelas.id">
@@ -27,8 +26,11 @@
                         </ul>
                         <span v-else>Tidak ada anggota</span>
                     </td>
-                    <td>{{ formatDate(kelas.created_at) }}</td>
-                    <td>{{ formatDate(kelas.updated_at) }}</td>
+                    <td>
+                        <!-- Tombol aksi (Edit dan Hapus) -->
+                        <button @click="editKelas(kelas.id)" class="btn btn-warning">Edit</button>
+                        <button @click="deleteKelas(kelas.id)" class="btn btn-danger">Hapus</button>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -43,27 +45,44 @@ export default {
     data() {
         return {
             kelasData: [], // Menyimpan data kelas dari API
+            errorMessage: null, // Pesan error jika terjadi masalah
         };
     },
     methods: {
-        // Format tanggal agar mudah dibaca
-        formatDate(date) {
-            if (!date) return 'N/A';
-            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            return new Date(date).toLocaleDateString('id-ID', options);
-        },
         // Fetch data kelas dari API
         async fetchData() {
             try {
+                console.log('Fetching data from:', 'http://localhost:8000/api/listkelas'); // Debugging
                 const response = await axios.get('http://localhost:8000/api/listkelas');
                 if (response.data.status === "success") {
-                    // Simpan data kelas di `kelasData`
                     this.kelasData = response.data.data;
                 } else {
-                    console.error("Gagal memuat data kelas:", response.data.message);
+                    this.errorMessage = "Gagal memuat data kelas: " + response.data.message;
                 }
             } catch (error) {
-                console.error("Terjadi kesalahan saat mengambil data:", error.message);
+                this.errorMessage = "Terjadi kesalahan saat mengambil data: " + error.message;
+                console.error(error);
+            }
+        },
+        // Fungsi untuk tombol edit
+        editKelas(id) {
+            console.log(`Edit kelas dengan ID: ${id}`);
+            // Anda bisa menambahkan navigasi ke halaman edit atau membuka modal edit
+        },
+        // Fungsi untuk tombol hapus
+        async deleteKelas(id) {
+            const confirmation = confirm("Apakah Anda yakin ingin menghapus kelas ini?");
+            if (confirmation) {
+                try {
+                    const response = await axios.delete(`http://localhost:8000/api/kelas/${id}`);
+                    if (response.status === 200) {
+                        alert("Kelas berhasil dihapus.");
+                        this.fetchData(); // Refresh data setelah penghapusan
+                    }
+                } catch (error) {
+                    console.error("Gagal menghapus kelas:", error.message);
+                    alert("Terjadi kesalahan saat menghapus kelas.");
+                }
             }
         }
     },
@@ -90,5 +109,23 @@ export default {
 
 .table th {
     background-color: #f2f2f2;
+}
+
+.btn {
+    padding: 5px 10px;
+    margin: 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-warning {
+    background-color: #f0ad4e;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #d9534f;
+    color: white;
 }
 </style>

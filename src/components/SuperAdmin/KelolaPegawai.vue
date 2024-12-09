@@ -1,7 +1,6 @@
 <template>
     <div>
         <h1>Daftar Pegawai</h1>
-        <button @click="fetchEmployees" class="refresh-button">Refresh Data</button>
         <div v-if="loading" class="loader"></div>
 
         <!-- Tabel Pegawai -->
@@ -27,18 +26,26 @@
                     <td>{{ employee.nama_kelas }}</td>
                     <td>
                         <div v-if="employee.jabatan === 'System Admin'">
-                            <button @click="editEmployee(employee.username)" class="edit-button">Edit</button>
-                            <button @click="deleteEmployee(employee.username)" class="delete-button">Hapus</button>
+                            <i class="fas fa-edit action-icon" @click="editEmployee(employee.username)"
+                                title="Edit"></i>
+                            <i class="fas fa-trash action-icon" @click="deleteEmployee(employee.username)"
+                                title="Hapus"></i>
                         </div>
                         <div v-else-if="employee.jabatan === 'Pegawai'">
-                            <button @click="openPromotionDialog(employee)" class="action-button">Promosikan</button>
-                            <button @click="editEmployee(employee.username)" class="edit-button">Edit</button>
-                            <button @click="deleteEmployee(employee.username)" class="delete-button">Hapus</button>
+                            <i class="fas fa-arrow-up action-icon" @click="openPromotionDialog(employee.username)"
+                                title="Promosikan"></i>
+                            <i class="fas fa-edit action-icon" @click="editEmployee(employee.username)"
+                                title="Edit"></i>
+                            <i class="fas fa-trash action-icon" @click="deleteEmployee(employee.username)"
+                                title="Hapus"></i>
                         </div>
                         <div v-else-if="employee.jabatan === 'Ketua Kelas'">
-                            <button @click="demoteEmployee(employee.username)" class="action-button">Demosi</button>
-                            <button @click="editEmployee(employee.username)" class="edit-button">Edit</button>
-                            <button @click="deleteEmployee(employee.username)" class="delete-button">Hapus</button>
+                            <i class="fas fa-arrow-down action-icon" @click="demoteEmployee(employee.username)"
+                                title="Demote"></i>
+                            <i class="fas fa-edit action-icon" @click="editEmployee(employee.username)"
+                                title="Edit"></i>
+                            <i class="fas fa-trash action-icon" @click="deleteEmployee(employee.username)"
+                                title="Hapus"></i>
                         </div>
                     </td>
                 </tr>
@@ -136,7 +143,7 @@ export default {
             if (confirm("Apakah Anda yakin ingin menghapus pegawai ini?")) {
                 try {
                     const response = await axios.delete(
-                        `http://localhost:8000/api/pegawai/${username}`
+                        `http://localhost:8000/api/pegawai/${username}/delet`
                     );
                     this.success = response.data.message;
                     this.fetchEmployees();
@@ -165,7 +172,7 @@ export default {
 </script>
 
 <style>
-/* Gaya untuk tabel dan modal */
+/* Gaya untuk tabel */
 .employee-table {
     width: 100%;
     border-collapse: collapse;
@@ -182,6 +189,62 @@ export default {
     background-color: #f2f2f2;
 }
 
+/* Gaya ikon aksi */
+.action-icon {
+    margin: 0 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: color 0.3s ease, transform 0.2s ease;
+}
+
+/* Warna untuk masing-masing ikon */
+.fa-edit {
+    color: #3498db;
+    /* Biru untuk tombol edit */
+}
+
+.fa-edit:hover {
+    color: #2980b9;
+    /* Biru lebih gelap saat hover */
+}
+
+.fa-trash {
+    color: #e74c3c;
+    /* Merah untuk tombol hapus */
+}
+
+.fa-trash:hover {
+    color: #c0392b;
+    /* Merah lebih gelap saat hover */
+}
+
+.fa-arrow-up {
+    color: #2ecc71;
+    /* Hijau untuk promosi */
+}
+
+.fa-arrow-up:hover {
+    color: #27ae60;
+    /* Hijau lebih gelap saat hover */
+}
+
+.fa-arrow-down {
+    color: #f1c40f;
+    /* Kuning untuk demosi */
+}
+
+.fa-arrow-down:hover {
+    color: #f39c12;
+    /* Kuning lebih gelap saat hover */
+}
+
+/* Tambahkan efek hover */
+.action-icon:hover {
+    transform: scale(1.2);
+    /* Perbesar sedikit saat hover */
+}
+
+/* Gaya untuk modal */
 .modal {
     display: flex;
     justify-content: center;
@@ -202,12 +265,14 @@ export default {
     text-align: center;
 }
 
+/* Gaya untuk selector */
 .class-selector {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
 }
 
+/* Tombol konfirmasi */
 .confirm-button {
     background-color: #2ecc71;
     color: white;
@@ -218,6 +283,12 @@ export default {
     border-radius: 3px;
 }
 
+.confirm-button:hover {
+    background-color: #27ae60;
+    /* Hijau lebih gelap saat hover */
+}
+
+/* Tombol batal */
 .cancel-button {
     background-color: #e74c3c;
     color: white;
@@ -227,11 +298,18 @@ export default {
     border-radius: 3px;
 }
 
+.cancel-button:hover {
+    background-color: #c0392b;
+    /* Merah lebih gelap saat hover */
+}
+
+/* Pesan sukses */
 .success-message {
     color: green;
     margin-top: 10px;
 }
 
+/* Pesan error */
 .error-message {
     color: red;
     margin-top: 10px;

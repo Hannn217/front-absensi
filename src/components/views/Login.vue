@@ -71,7 +71,7 @@ export default {
         // Redect lama sesuai jabatan
         switch (userData.jabatan) {
           case 'Super Admin':
-            this.$router.push('/home/super-admin');
+            this.$router.push('/home/super-admin/pegawai');
             break;
           case 'System Admin':
             this.$router.push('/home/system-admin');
