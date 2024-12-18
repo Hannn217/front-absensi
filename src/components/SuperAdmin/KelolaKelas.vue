@@ -66,7 +66,7 @@ export default {
         },
         // Fungsi untuk tombol edit
         editKelas(id) {
-            console.log(`Edit kelas dengan ID: ${id}`);
+            console.log(`Edit kelas dengan nama: ${username}`);
             // Anda bisa menambahkan navigasi ke halaman edit atau membuka modal edit
         },
         // Fungsi untuk tombol hapus

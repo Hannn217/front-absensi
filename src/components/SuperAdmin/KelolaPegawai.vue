@@ -4,7 +4,7 @@
         <div v-if="loading" class="loader"></div>
 
         <!-- Tabel Pegawai -->
-        <table v-if="!loading" class="employee-table">
+        <table v-if="!loading && employees.length" class="employee-table">
             <thead>
                 <tr>
                     <th>Nama</th>
@@ -17,14 +17,15 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="employee in employees" :key="employee.id">
-                    <td>{{ employee.nama }}</td>
-                    <td>{{ employee.username }}</td>
-                    <td>{{ employee.email }}</td>
-                    <td>{{ employee.nomor_hp }}</td>
-                    <td>{{ employee.jabatan }}</td>
-                    <td>{{ employee.nama_kelas }}</td>
+                <tr v-for="employee in employees" :key="employee.username">
+                    <td>{{ employee.nama || 'Tidak Ada Data' }}</td>
+                    <td>{{ employee.username || 'Tidak Ada Data' }}</td>
+                    <td>{{ employee.email || 'Tidak Ada Data' }}</td>
+                    <td>{{ employee.nomor_hp || 'Tidak Ada Data' }}</td>
+                    <td>{{ employee.jabatan || 'Tidak Ada Data' }}</td>
+                    <td>{{ employee.nama_kelas || 'Belum Ditambahkan ke dalam kelas' }}</td>
                     <td>
+                        <!-- Aksi -->
                         <div v-if="employee.jabatan === 'System Admin'">
                             <i class="fas fa-edit action-icon" @click="editEmployee(employee.username)"
                                 title="Edit"></i>
@@ -32,7 +33,7 @@
                                 title="Hapus"></i>
                         </div>
                         <div v-else-if="employee.jabatan === 'Pegawai'">
-                            <i class="fas fa-arrow-up action-icon" @click="openPromotionDialog(employee.username)"
+                            <i class="fas fa-arrow-up action-icon" @click="openPromotionDialog(employee)"
                                 title="Promosikan"></i>
                             <i class="fas fa-edit action-icon" @click="editEmployee(employee.username)"
                                 title="Edit"></i>
@@ -51,24 +52,7 @@
                 </tr>
             </tbody>
         </table>
-
-        <!-- Modal Promosi -->
-        <div v-if="showPromotionDialog" class="modal">
-            <div class="modal-content">
-                <h3>Pilih Kelas untuk Promosi</h3>
-                <select v-model="selectedClass" class="class-selector">
-                    <option v-for="kelas in classes" :key="kelas.id" :value="kelas.id">
-                        {{ kelas.nama_kelas }}
-                    </option>
-                </select>
-                <button @click="promoteEmployee(selectedEmployee)" class="confirm-button">Promosikan</button>
-                <button @click="closePromotionDialog" class="cancel-button">Batal</button>
-            </div>
-        </div>
-
-        <!-- Pesan Sukses -->
-        <div v-if="success" class="success-message">{{ success }}</div>
-        <div v-if="error" class="error-message">{{ error }}</div>
+        <p v-else>Tidak ada data pegawai.</p>
     </div>
 </template>
 
@@ -78,104 +62,81 @@ import axios from "axios";
 export default {
     data() {
         return {
-            employees: [],
-            classes: [],
-            loading: false,
-            success: "",
-            error: "",
-            showPromotionDialog: false,
-            selectedClass: null,
-            selectedEmployee: null,
+            employees: [], // Data pegawai
+            loading: false, // Status loading
+            error: "", // Pesan error jika ada
         };
     },
     methods: {
+        // Mengambil data pegawai dari API
         async fetchEmployees() {
             this.loading = true;
-            this.success = "";
-            this.error = "";
             try {
                 const response = await axios.get("http://localhost:8000/api/all/profile");
-                this.employees = response.data.data;
+                this.employees = response.data.data || []; // Gunakan data API, validasi jika kosong
             } catch (error) {
-                this.handleError(error);
+                console.error(error);
+                this.error = "Gagal memuat data pegawai.";
             } finally {
                 this.loading = false;
             }
         },
-        openPromotionDialog(employee) {
-            if (employee.nama_kelas === "Belum Ditambahkan ke dalam kelas") {
-                this.selectedEmployee = employee;
-                this.showPromotionDialog = true;
-            } else {
-                this.promoteEmployee(employee.username);
-            }
-        },
-        async promoteEmployee(employee) {
-            try {
-                const response = await axios.post(
-                    `http://localhost:8000/api/pegawai/${employee.username}/promote`,
-                    { class_id: this.selectedClass }
-                );
-                this.success = response.data.message;
-                this.closePromotionDialog();
-                this.fetchEmployees();
-            } catch (error) {
-                this.handleError(error);
-            }
-        },
-        closePromotionDialog() {
-            this.showPromotionDialog = false;
-            this.selectedClass = null;
-            this.selectedEmployee = null;
-        },
-        async demoteEmployee(username) {
-            try {
-                const response = await axios.post(
-                    `http://localhost:8000/api/pegawai/${username}/demote`
-                );
-                this.success = response.data.message;
-                this.fetchEmployees();
-            } catch (error) {
-                this.handleError(error);
-            }
-        },
-        async deleteEmployee(username) {
-            if (confirm("Apakah Anda yakin ingin menghapus pegawai ini?")) {
-                try {
-                    const response = await axios.delete(
-                        `http://localhost:8000/api/pegawai/${username}/delet`
-                    );
-                    this.success = response.data.message;
-                    this.fetchEmployees();
-                } catch (error) {
-                    this.handleError(error);
-                }
-            }
-        },
-        handleError(error) {
-            if (error.response) {
-                this.error = error.response.data.message;
-            } else if (error.request) {
-                this.error = "Tidak ada respon dari server";
-            } else {
-                this.error = "Terjadi kesalahan: " + error.message;
-            }
-        },
+
+        // Fungsi untuk mengedit pegawai
         editEmployee(username) {
-            alert(`Edit pegawai: ${username}`);
+            alert(`Edit pegawai dengan username: ${username}`);
+        },
+
+        // Fungsi untuk menghapus pegawai
+        deleteEmployee(username) {
+            alert(`Hapus pegawai dengan username: ${username}`);
+        },
+
+        // Fungsi untuk membuka dialog promosi
+        openPromotionDialog(employee) {
+            alert(`Promosikan pegawai: ${employee.nama}`);
+        },
+
+        // Fungsi untuk menurunkan jabatan pegawai
+        demoteEmployee(username) {
+            alert(`Demote pegawai dengan username: ${username}`);
         },
     },
     mounted() {
+        // Memuat data pegawai saat komponen di-mount
         this.fetchEmployees();
     },
 };
 </script>
 
-<style>
-/* Gaya untuk tabel */
+<style scoped>
+/* Gaya untuk loader */
+.loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+/* Animasi loading */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tabel gaya */
 .employee-table {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 20px;
 }
 
 .employee-table th,
@@ -186,132 +147,18 @@ export default {
 }
 
 .employee-table th {
-    background-color: #f2f2f2;
+    background-color: #f4f4f4;
+    font-weight: bold;
 }
 
-/* Gaya ikon aksi */
+/* Gaya untuk ikon */
 .action-icon {
-    margin: 0 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: color 0.3s ease, transform 0.2s ease;
-}
-
-/* Warna untuk masing-masing ikon */
-.fa-edit {
-    color: #3498db;
-    /* Biru untuk tombol edit */
-}
-
-.fa-edit:hover {
-    color: #2980b9;
-    /* Biru lebih gelap saat hover */
-}
-
-.fa-trash {
-    color: #e74c3c;
-    /* Merah untuk tombol hapus */
-}
-
-.fa-trash:hover {
-    color: #c0392b;
-    /* Merah lebih gelap saat hover */
-}
-
-.fa-arrow-up {
-    color: #2ecc71;
-    /* Hijau untuk promosi */
-}
-
-.fa-arrow-up:hover {
-    color: #27ae60;
-    /* Hijau lebih gelap saat hover */
-}
-
-.fa-arrow-down {
-    color: #f1c40f;
-    /* Kuning untuk demosi */
-}
-
-.fa-arrow-down:hover {
-    color: #f39c12;
-    /* Kuning lebih gelap saat hover */
-}
-
-/* Tambahkan efek hover */
-.action-icon:hover {
-    transform: scale(1.2);
-    /* Perbesar sedikit saat hover */
-}
-
-/* Gaya untuk modal */
-.modal {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    width: 300px;
-    text-align: center;
-}
-
-/* Gaya untuk selector */
-.class-selector {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-/* Tombol konfirmasi */
-.confirm-button {
-    background-color: #2ecc71;
-    color: white;
-    padding: 10px;
-    border: none;
     cursor: pointer;
     margin-right: 10px;
-    border-radius: 3px;
+    color: #3498db;
 }
 
-.confirm-button:hover {
-    background-color: #27ae60;
-    /* Hijau lebih gelap saat hover */
-}
-
-/* Tombol batal */
-.cancel-button {
-    background-color: #e74c3c;
-    color: white;
-    padding: 10px;
-    border: none;
-    cursor: pointer;
-    border-radius: 3px;
-}
-
-.cancel-button:hover {
-    background-color: #c0392b;
-    /* Merah lebih gelap saat hover */
-}
-
-/* Pesan sukses */
-.success-message {
-    color: green;
-    margin-top: 10px;
-}
-
-/* Pesan error */
-.error-message {
-    color: red;
-    margin-top: 10px;
+.action-icon:hover {
+    color: #1abc9c;
 }
 </style>
